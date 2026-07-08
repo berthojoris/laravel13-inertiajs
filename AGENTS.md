@@ -1,1038 +1,430 @@
-# AGENTS.md
+# AGENTS.md — AI Development Guidelines
 
-# AI Development Guidelines
 ## Laravel 13 + Inertia.js v3
 
-This repository is designed to be maintained by both humans and AI coding agents.
+This repository is maintained by both humans and AI coding agents. Every rule below is mandatory. When multiple approaches are possible, always choose the one that is easier to maintain, scalable, testable, readable, follows Laravel conventions, follows SOLID principles, and production-ready.
 
-All AI agents MUST follow every rule in this document.
-
-If multiple approaches are possible, always choose the one that is:
-
-- easier to maintain
-- scalable
-- testable
-- readable
-- follows Laravel conventions
-- follows SOLID principles
-- production-ready
-
-Never optimize for fewer lines of code.
-Always optimize for maintainability.
+> Never optimize for fewer lines of code. Always optimize for maintainability.
 
 ---
 
-# Tech Stack
+## Tech Stack
 
-Framework
-
-- Laravel 13
-- PHP 8.4+
-
-Frontend
-
-- Inertia.js v3
-- React 19
-- TypeScript
-- Vite
-- TailwindCSS
-
-Database
-
-- SQLite
-
-Authentication
-
-- Laravel Starter Kit / Laravel Auth
-- Policies
-- Gates
-
-Queue
-
-- Laravel Queue
-- Redis
-
-Cache
-
-- Redis
-
-Filesystem
-
-- Laravel Filesystem
+| Layer | Technology |
+|---|---|
+| Framework | Laravel 13, PHP 8.4+ |
+| Frontend | React 19, Inertia.js v3, TypeScript, Vite, Tailwind CSS v4 |
+| Database | SQLite |
+| Authentication | Laravel Starter Kit / Laravel Auth, Policies, Gates |
+| Queue / Cache | Laravel Queue, Redis |
+| Filesystem | Laravel Filesystem |
 
 ---
 
-# Architecture
+## Architecture — Layered
 
-This project MUST follow Layered Architecture.
+This project follows **Layered Architecture**. Business logic must never be placed inside Controllers, Models, Middleware, Routes, Console Commands, Jobs, Events, or Listeners. Business logic belongs only inside **Service / Action** classes.
 
-Never place business logic inside:
+### Data Flow
 
-- Controllers
-- Models
-- Middleware
-- Routes
-- Console Commands
-- Jobs
-- Events
-- Listeners
+```
+Controller  →  Action  →  Service  →  Repository  →  Model
+```
 
-Business logic belongs only inside Service / Action classes.
+### Directory Structure
 
-Recommended structure:
-
+```text
 app/
-
-    Actions/
-    Services/
-    Repositories/
-    DTO/
-    Data/
-    Queries/
-    Policies/
-    Enums/
-    Exceptions/
-    Http/
-        Controllers/
-        Requests/
-        Resources/
-    Models/
-    Events/
-    Jobs/
-    Listeners/
-    Observers/
-    Providers/
-    Support/
-    Traits/
-
----
-
-# Layer Responsibilities
-
-## Controllers
-
-Controllers should ONLY:
-
-- authorize
-- validate
-- call Action/Service
-- return response
-
-Controllers should never:
-
-- query database
-- contain business logic
-- manipulate collections extensively
-- contain more than ~30 lines
-
-Good
-
-Controller
-
-↓
-
-Action
-
-↓
-
-Service
-
-↓
-
-Repository
-
-↓
-
-Model
-
----
-
-## Actions
-
-Actions represent one use case.
-
-Examples:
-
-CreateUserAction
-
-UpdateOrderAction
-
-DeleteInvoiceAction
-
-PublishPostAction
-
-GenerateReportAction
-
-Each Action should have ONE public method.
-
-```
-execute(...)
-```
-
-No static methods.
-
----
-
-## Services
-
-Services contain reusable business logic.
-
-Example:
-
-```
-InvoiceCalculatorService
-
-PriceService
-
-PermissionService
-
-NotificationService
-```
-
-Services may call repositories.
-
----
-
-## Repositories
-
-Repositories are responsible for database access.
-
-Repositories should contain:
-
-- Eloquent queries
-- Query Builder
-- pagination
-- eager loading
-
-Controllers must never use Eloquent directly.
-
----
-
-## Models
-
-Models represent persistence only.
-
-Allowed:
-
-Relationships
-
-Scopes
-
-Casts
-
-Accessors
-
-Mutators
-
-Observers
-
-Not allowed:
-
-Business logic
-
-Complex calculations
-
-API integrations
-
----
-
-# Validation
-
-Always use FormRequest.
-
-Never validate inside controller.
-
-Example
-
-```
-StoreUserRequest
-UpdateUserRequest
+├── Actions/
+├── Services/
+├── Repositories/
+├── DTO/               # Data Transfer Objects
+├── Data/
+├── Queries/
+├── Policies/
+├── Enums/
+├── Exceptions/
+├── Http/
+│   ├── Controllers/
+│   ├── Requests/      # FormRequest classes
+│   └── Resources/     # API Resources
+├── Models/
+├── Events/
+├── Jobs/
+├── Listeners/
+├── Observers/
+├── Providers/
+├── Support/
+└── Traits/
 ```
 
 ---
 
-# Authorization
+## Backend
 
-Always use
+### Controllers
 
-Policies
+Controllers **must only**: authorize, validate (via FormRequest), call an Action or Service, return a response.
 
-or
+Controllers **must never**: query the database, contain business logic, manipulate collections extensively, or exceed ~30 lines.
 
-Gates
+```php
+// Bad — business logic in controller
+public function store(Request $request): RedirectResponse {
+    $data = $request->validate([...]);
+    $item = Item::create($data);
+    Mail::to($item->user)->send(new ItemCreated($item));
+    return redirect('/items');
+}
 
-Never manually check permissions inside controller.
-
----
-
-# DTO
-
-Use DTO objects whenever passing structured data.
-
-Never pass raw request objects into Services.
-
-Good
-
-```
-UserData
-
-OrderData
-
-ProductData
+// Good — thin controller, delegates to Action
+public function store(
+    StoreItemRequest $request,
+    CreateItemAction $action,
+): RedirectResponse {
+    $action->execute(ItemData::fromRequest($request));
+    return redirect('/items');
+}
 ```
 
----
+### Actions
 
-# Database
+One use case per Action. One public method: `execute(...)`. No static methods.
 
-Always use:
+```php
+class CreateUserAction
+{
+    public function __construct(
+        private readonly UserRepository $repository,
+    ) {}
 
-Migration
-
-Seeder
-
-Factory
-
-Never manually modify database schema.
-
-Never use raw SQL unless absolutely necessary.
-
-Prefer:
-
-Eloquent
-
-Query Builder
-
-Repository
-
----
-
-# Eloquent
-
-Always eager load.
-
-Avoid N+1.
-
-Use:
-
-```
-with()
-
-load()
-
-loadMissing()
+    public function execute(UserData $data): User { /* ... */ }
+}
 ```
 
-Use scopes.
+### Services
 
-Example
+Reusable business logic. May call repositories.
 
-```
-User::active()
-```
-
-Avoid duplicated queries.
-
----
-
-# Transactions
-
-Whenever updating multiple tables:
-
-Always use
-
-```
-DB::transaction()
+```php
+class InvoiceCalculatorService { /* ... */ }
+class PriceService { /* ... */ }
 ```
 
----
+### Repositories
 
-# API Integrations
+All Eloquent / Query Builder access lives here. Controllers must never use Eloquent directly.
 
-All external API logic belongs inside
+```php
+class UserRepository
+{
+    public function __construct(private readonly User $model) {}
 
-```
-Services/Integrations
-```
-
-Never call HTTP directly inside controllers.
-
-Use
-
-Laravel HTTP Client
-
-```
-Http::retry()
-    ->timeout()
+    public function findByEmail(string $email): ?User
+    {
+        return $this->model->where('email', $email)->first();
+    }
+}
 ```
 
-Always handle:
+### Models
 
-timeouts
+Represent persistence only.
 
-retries
+**Allowed**: relationships, scopes, casts, accessors, mutators, observers.
 
-exceptions
+**Not allowed**: business logic, complex calculations, API integrations.
 
----
+### Validation
 
-# Exceptions
+Always use `FormRequest`. Never validate inside a controller.
 
-Create custom exceptions.
-
-Never throw generic Exception.
-
-Example
-
-```
-InsufficientBalanceException
-
-PaymentFailedException
-
-InvalidCouponException
+```php
+// Good
+class StoreUserRequest extends FormRequest
+{
+    public function rules(): array
+    {
+        return ['email' => ['required', 'email', Rule::unique('users')]];
+    }
+}
 ```
 
----
+### Authorization
 
-# Enums
+Always use Policies or Gates. Never manually check permissions inside a controller.
 
-Use PHP Enums whenever applicable.
+### DTO
 
-Never use magic strings.
+Use DTO objects when passing structured data. Never pass raw request objects into Services.
 
-Example
+```php
+// Good
+$action->execute(UserData::fromRequest($request));
 
-```
-OrderStatus
-
-UserRole
-
-PaymentStatus
+// Bad
+$action->execute($request);
 ```
 
----
+### Database
 
-# Events
+Always use Migration, Seeder, Factory. Never manually modify the schema. Never use raw SQL unless absolutely necessary. Prefer Eloquent or Query Builder via Repository.
+
+### Eloquent
+
+Always eager load. Avoid N+1. Use `with()`, `load()`, `loadMissing()`, and scopes.
+
+```php
+// Good
+User::with('orders')->where('active', true)->first();
+```
+
+### Transactions
+
+When updating multiple tables, always use `DB::transaction()`.
+
+### API Integrations
+
+All external API logic belongs in `Services/Integrations`. Never call HTTP directly inside controllers.
+
+```php
+Http::retry(3, 100)->timeout(10)->post('https://api.example.com/orders', $data);
+```
+
+Always handle timeouts, retries, and exceptions.
+
+### Exceptions
+
+Create custom exceptions. Never throw generic `Exception`.
+
+```php
+throw new InsufficientBalanceException('Balance too low');
+```
+
+### Enums
+
+Use PHP Enums. Never use magic strings.
+
+```php
+// Good
+$status = OrderStatus::Paid;
+
+// Bad
+$status = 'paid';
+```
+
+### Events
 
 Fire events only after successful business operations.
 
-Example
-
-```
-UserRegistered
-
-OrderPaid
-
-InvoiceGenerated
+```php
+UserRegistered::dispatch($user);
+OrderPaid::dispatch($order);
 ```
 
----
+### Jobs
 
-# Jobs
+Heavy tasks must always use queues. Examples: email, import, export, PDF, video processing, notifications. Never perform long-running tasks synchronously.
 
-Heavy tasks should always use queues.
+### Caching
 
-Examples
-
-Email
-
-Import
-
-Export
-
-PDF
-
-Video processing
-
-Image processing
-
-Notifications
-
-Never perform long-running tasks synchronously.
-
----
-
-# Notifications
-
-Use Laravel Notifications.
-
-Never duplicate notification logic.
-
----
-
-# Caching
-
-Cache expensive queries.
-
-Use:
-
-```
-Cache::remember()
-
-Cache::tags()
+```php
+Cache::remember('key', now()->addMinutes(10), fn () => ExpensiveQuery::run());
 ```
 
 Always define TTL.
 
----
+### Logging
 
-# Logging
+Use `Log::info()`, `Log::warning()`, `Log::error()`. **Never** use `dd()`, `dump()`, `var_dump()`, or `print_r()` in production code.
 
-Use
+### Configuration
 
-```
-Log::info()
+Never hardcode URLs, API keys, secrets, or timeouts. Use config files. Never access `env()` outside config files — always use `config()`.
 
-Log::warning()
+### Dependency Injection
 
-Log::error()
-```
+Always use constructor injection. **Never** instantiate services manually.
 
-Never use
+```php
+// Bad
+$service = new PaymentService();
 
-```
-dd()
-
-dump()
-
-var_dump()
-
-print_r()
-```
-
-Production code must not contain debugging statements.
-
----
-
-# Configuration
-
-Never hardcode:
-
-URLs
-
-API Keys
-
-Secrets
-
-Timeouts
-
-Use config files.
-
----
-
-# Environment
-
-Never access:
-
-```
-env()
-```
-
-outside config files.
-
-Always use
-
-```
-config()
-```
-
----
-
-# Dependency Injection
-
-Always use constructor injection.
-
-Never instantiate services manually.
-
-Bad
-
-```
-new PaymentService()
-```
-
-Good
-
-```
+// Good
 public function __construct(
-    PaymentService $service
-)
+    private readonly PaymentService $service,
+) {}
 ```
 
 ---
 
-# Frontend
+## Frontend
 
-Use:
+### Technology
 
-- React 19
-- Inertia.js v3
-- TypeScript
-- Functional Components
-- React Hooks
-- Vite
-- Tailwind CSS v4
+React 19, Inertia.js v3, TypeScript, functional components, custom hooks, Vite, Tailwind CSS v4.
 
-Always:
+### Directory Structure
+
+```text
+resources/js/
+├── components/   # Reusable UI components
+├── hooks/        # Custom React hooks
+├── layouts/      # Page layouts
+├── lib/          # Utilities and constants
+├── pages/        # Inertia page components
+├── types/        # Shared TypeScript types and interfaces
+├── utils/        # Helper functions
+└── app.tsx
+```
+
+### Always
 
 - Use functional components only.
-- Use TypeScript for every component, hook, and utility.
+- Type every component, hook, and utility. Never use `any`.
 - Prefer composition through custom hooks.
 - Keep components small and focused on a single responsibility.
-- Reuse shared components whenever possible.
+- Reuse shared components.
 - Use named exports unless a framework convention requires a default export.
-- Keep page components thin by moving business logic into Actions and Services.
-- Use path aliases instead of long relative imports when configured.
+- Keep page components thin — move business logic into Actions and Services.
+- Use path aliases (`@/`), not long relative imports.
+- Use custom hooks for: Authentication, Permissions, Data fetching, Pagination, Debouncing, Dialogs, Toast notifications.
 
-Never:
+### Never
 
 - Use class components.
-- Use `any` unless absolutely unavoidable.
 - Put business logic inside React components.
-- Put API calls directly inside page components when they belong in reusable hooks or services.
+- Call APIs directly inside reusable UI components.
 - Duplicate UI or business logic.
-- Create overly large components (>300 lines) without a clear justification.
+- Create components larger than ~300 lines without justification.
+- Use `any` unless absolutely unavoidable.
 
-Organize frontend code as follows:
+### React Best Practices
 
-```
-resources/
-└── js/
-    ├── components/
-    ├── hooks/
-    ├── layouts/
-    ├── lib/
-    ├── pages/
-    ├── types/
-    ├── utils/
-    └── app.tsx
-```
+- Prefer derived state over duplicated state.
+- Use Context only for truly global state. Prefer prop composition.
+- Memoize only when profiling shows measurable benefit.
+- Prefer controlled components for forms.
+- Split components when they exceed ~200–300 lines or have multiple responsibilities.
+- Always type component props using TypeScript interfaces or type aliases.
 
-Prefer:
+### Inertia
 
-- Custom Hooks
-- Composition
-- Reusable Components
-- Strong TypeScript typing
-- Clear separation between UI, state, and business logic
+- Use `router.visit()`, `router.post()`, `router.put()`, `router.patch()`, `router.delete()`.
+- Use `useForm()` for forms.
+- Use partial reloads, deferred props, lazy props, remember state. Use polling only when necessary.
 
-# Inertia
+### Styling
 
-Pages belong inside
+Tailwind CSS only. No inline styles. Extract repeated classes into shared components.
 
-```
-resources/js/pages
-```
+### API Resources
 
-Reusable components belong inside
+Always use Laravel API Resources. Never return raw models from an API.
 
-```
-resources/js/components
-```
+### File Upload
 
-Layouts
+Always validate `type`, `size`, `mime`. Use Storage facade. Never use `public_path()` for uploads.
 
-```
-resources/js/layouts
-```
+### Pagination
 
-Composables
+Always use Laravel paginator. Never manually paginate collections.
 
-```
-resources/js/composables
-```
+### Query Optimization
 
-Utilities
-
-```
-resources/js/lib
-```
-
-Types
-
-```
-resources/js/types
-```
+Prefer `exists()` over `count()` when checking existence. Use `chunk()`, `lazy()`, or `cursor()` for large datasets.
 
 ---
 
-# Inertia Best Practices
+## Code Quality
 
-Use
+### Naming
 
-```
-router.visit()
+| Element | Convention | Example |
+|---|---|---|
+| Controller | PascalCase | `UserController` |
+| Action | PascalCase + Action suffix | `CreateUserAction` |
+| Service | PascalCase | `UserService` |
+| Repository | PascalCase + Repository suffix | `UserRepository` |
+| DTO | PascalCase + Data suffix | `UserData` |
+| Policy | PascalCase + Policy suffix | `UserPolicy` |
+| FormRequest | PascalCase + Request suffix | `StoreUserRequest` |
+| Resource | PascalCase + Resource suffix | `UserResource` |
 
-router.post()
+### SOLID
 
-router.put()
+Every code must respect: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion.
 
-router.patch()
+### DRY
 
-router.delete()
-```
+Never duplicate business logic. Extract reusable code.
 
-Use
+### KISS
 
-```
-useForm()
-```
+Choose the simplest maintainable solution. Avoid unnecessary abstractions.
 
-for forms.
-
-Use partial reloads.
-
-Use deferred props.
-
-Use lazy props.
-
-Use remember state.
-
-Use polling only when necessary.
-
----
-
-# React
-
-Prefer custom hooks for reusable logic.
-
-Never duplicate business logic or UI logic.
-
-Split components when they exceed approximately 200–300 lines or have multiple responsibilities.
-
-Keep components focused on a single responsibility.
-
-Move complex logic into custom hooks.
-
-Move business logic into Actions and Services, never React components.
-
-Prefer composition over inheritance.
-
-Avoid deeply nested component trees.
-
-Memoize components and callbacks only when profiling shows a measurable performance benefit.
-
-Avoid premature optimization.
-
-Keep page components thin by extracting reusable UI into shared components.
-
-Prefer controlled components for forms unless there is a clear performance reason otherwise.
-
-Always type component props using TypeScript interfaces or type aliases.
-
-Avoid using `any`.
-
-Keep local state minimal.
-
-Prefer derived state over duplicated state.
-
-Use Context only for truly global state. Do not replace prop composition with Context unnecessarily.
-
-Use custom hooks for:
-- Authentication
-- Permissions
-- Data fetching
-- Pagination
-- Debouncing
-- Dialogs
-- Toast notifications
-- Shared UI behavior
-
-Never perform API requests directly inside reusable UI components unless they are specifically designed as data-fetching components.
-
----
-
-# TypeScript
-
-Never use
-
-```
-any
-```
-
-Always define interfaces.
-
-Prefer
-
-type
-
-or
-
-interface
-
----
-
-# Components
-
-Small
-
-Reusable
-
-Composable
-
-Single responsibility
-
-Avoid giant page components.
-
----
-
-# Styling
-
-TailwindCSS only.
-
-Avoid inline styles.
-
-Extract repeated classes into components.
-
----
-
-# File Upload
-
-Always validate
-
-type
-
-size
-
-mime
-
-Use Storage facade.
-
-Never use public_path() for uploads.
-
----
-
-# API Resources
-
-Always use Laravel API Resources.
-
-Never return raw models from API.
-
----
-
-# Pagination
-
-Always use Laravel paginator.
-
-Never manually paginate collections.
-
----
-
-# Query Optimization
-
-Prefer
-
-exists()
-
-instead of
-
-count()
-
-when checking existence.
-
-Use chunk()
-
-lazy()
-
-cursor()
-
-for large datasets.
-
----
-
-# Naming
-
-Controllers
-
-```
-UserController
-```
-
-Actions
-
-```
-CreateUserAction
-```
-
-Services
-
-```
-UserService
-```
-
-Repositories
-
-```
-UserRepository
-```
-
-DTO
-
-```
-UserData
-```
-
-Policies
-
-```
-UserPolicy
-```
-
-Requests
-
-```
-StoreUserRequest
-```
-
-Resources
-
-```
-UserResource
-```
-
----
-
-# SOLID
-
-Every new code should respect:
-
-Single Responsibility
-
-Open/Closed
-
-Liskov
-
-Interface Segregation
-
-Dependency Inversion
-
----
-
-# DRY
-
-Never duplicate business logic.
-
-Extract reusable code.
-
----
-
-# KISS
-
-Choose the simplest maintainable solution.
-
-Avoid unnecessary abstractions.
-
----
-
-# YAGNI
+### YAGNI
 
 Do not build features that are not requested.
 
----
+### Code Style
 
-# Code Style
+Follow Laravel Pint and PSR-12. Keep methods short. Prefer early return. Avoid nested if statements.
 
-Follow Laravel Pint.
+### Comments
 
-Follow PSR-12.
-
-Keep methods short.
-
-Prefer early return.
-
-Avoid nested if statements.
+Write self-documenting code. Only comment **why**, never **what**.
 
 ---
 
-# Comments
+## Testing
 
-Write self-documenting code.
+Every new feature must include:
 
-Only comment WHY.
-
-Never comment WHAT.
-
----
-
-# Testing
-
-Every new feature should include:
-
-Feature Tests
-
-Unit Tests (for Services/Actions)
-
-Repository Tests (when needed)
+- **Feature Tests** — end-to-end behavior
+- **Unit Tests** — for Services and Actions
+- **Repository Tests** — when needed
 
 Prefer Pest.
 
 ---
 
-# Security
+## Security
 
-Always validate input.
-
-Escape output.
-
-Use CSRF.
-
-Use Policies.
-
-Never trust frontend input.
-
-Prevent mass assignment.
-
-Use fillable or guarded correctly.
+- Always validate input.
+- Escape output.
+- Use CSRF.
+- Use Policies.
+- Never trust frontend input.
+- Prevent mass assignment — use `fillable` or `guarded` correctly.
 
 ---
 
-# Performance
+## Performance
 
-Always eager load.
-
-Avoid duplicate queries.
-
-Cache expensive operations.
-
-Queue heavy work.
-
-Optimize pagination.
+- Always eager load (`with()`).
+- Avoid duplicate queries.
+- Cache expensive operations. Always define TTL.
+- Queue heavy work.
+- Optimize pagination.
 
 ---
 
-# AI Agent Rules
+## AI Agent Checklist
 
-When generating code:
+When generating code, ensure:
 
-✔ Follow Layered Architecture.
+- [ ] Follow Layered Architecture
+- [ ] Never place business logic inside controllers
+- [ ] Never bypass FormRequest
+- [ ] Never bypass Policies
+- [ ] Never duplicate code
+- [ ] Always use DTO
+- [ ] Always use Repository
+- [ ] Always use Service / Action
+- [ ] Always use dependency injection
+- [ ] Prefer readability over clever code
+- [ ] Follow Laravel, Inertia, React, and TypeScript best practices
+- [ ] Think like a senior architect
 
-✔ Never place business logic inside controllers.
-
-✔ Never bypass FormRequest.
-
-✔ Never bypass Policies.
-
-✔ Never duplicate code.
-
-✔ Always use DTO.
-
-✔ Always use Repository.
-
-✔ Always use Service/Action.
-
-✔ Always use dependency injection.
-
-✔ Always write maintainable code.
-
-✔ Prefer readability over clever code.
-
-✔ Follow Laravel best practices.
-
-✔ Follow Inertia best practices.
-
-✔ Follow React best practices.
-
-✔ Follow TypeScript best practices.
-
-✔ Think like a senior Laravel architect.
-
-The goal is to produce production-grade code that is scalable, testable, maintainable, and follows modern Laravel 13 + Inertia.js v3 best practices.
+The goal is production-grade code that is scalable, testable, maintainable, and follows modern Laravel 13 + Inertia.js v3 best practices.
