@@ -7,37 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { index } from '@/routes/survey-results';
-
-type SurveyResponse = {
-    id: number;
-    respondent_name: string;
-    email: string;
-    department: string;
-    satisfaction_score: number;
-    channel: string;
-    feedback: string | null;
-    created_at: string | null;
-};
-
-type PaginationLink = {
-    url: string | null;
-    label: string;
-    active: boolean;
-};
-
-type PaginatedResponses = {
-    data: SurveyResponse[];
-    links: PaginationLink[];
-    from: number | null;
-    to: number | null;
-    total: number;
-};
+import type { Paginated, SurveyResponse } from '@/types';
 
 export default function SurveyResults({
     responses,
     filters,
 }: {
-    responses: PaginatedResponses;
+    responses: Paginated<SurveyResponse>;
     filters: { search: string };
 }) {
     const [search, setSearch] = useState(filters.search ?? '');

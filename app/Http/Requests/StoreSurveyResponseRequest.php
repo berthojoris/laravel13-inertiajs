@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Department;
+use App\Enums\SurveyChannel;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,9 +19,9 @@ class StoreSurveyResponseRequest extends FormRequest
         return [
             'respondent_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
-            'department' => ['required', Rule::in(['Operations', 'Sales', 'Marketing', 'Product', 'Support'])],
+            'department' => ['required', Rule::enum(Department::class)],
             'satisfaction_score' => ['required', 'integer', 'between:1,5'],
-            'channel' => ['required', Rule::in(['Website', 'Email', 'WhatsApp', 'Walk-in'])],
+            'channel' => ['required', Rule::enum(SurveyChannel::class)],
             'feedback' => ['nullable', 'string', 'max:1000'],
         ];
     }

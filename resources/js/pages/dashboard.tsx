@@ -4,23 +4,7 @@ import { BarChart, LineChart, PieChart, ScoreRadar } from '@/components/analytic
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { dashboard } from '@/routes';
-
-type Metric = {
-    label: string;
-    value: string | number;
-    trend: string;
-};
-
-type PieItem = {
-    label: string;
-    value: number;
-    color: string;
-};
-
-type ChartItem = {
-    label: string;
-    value: number;
-};
+import type { ChartItem, Metric, PieItem } from '@/types';
 
 export default function Dashboard({
     metrics,

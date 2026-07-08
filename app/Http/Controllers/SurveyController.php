@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Survey\StoreSurveyResponseAction;
+use App\DTO\SurveyResponseData;
 use App\Http\Requests\StoreSurveyResponseRequest;
-use App\Models\SurveyResponse;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,12 +16,9 @@ class SurveyController extends Controller
         return Inertia::render('survey');
     }
 
-    public function store(StoreSurveyResponseRequest $request): RedirectResponse
+    public function store(StoreSurveyResponseRequest $request, StoreSurveyResponseAction $action): RedirectResponse
     {
-        SurveyResponse::create([
-            ...$request->validated(),
-            'user_id' => $request->user()->id,
-        ]);
+        $action->execute(SurveyResponseData::fromRequest($request));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Survey response saved.')]);
 

@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Exports\SurveyResponsesExport;
+use App\Actions\Survey\ExportSurveyReportAction;
+use App\DTO\ReportPeriodData;
 use App\Http\Requests\ExportSurveyReportRequest;
 use Inertia\Inertia;
 use Inertia\Response;
-use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ReportController extends Controller
@@ -16,11 +16,8 @@ class ReportController extends Controller
         return Inertia::render('report');
     }
 
-    public function export(ExportSurveyReportRequest $request): BinaryFileResponse
+    public function export(ExportSurveyReportRequest $request, ExportSurveyReportAction $action): BinaryFileResponse
     {
-        $validated = $request->validated();
-        $filename = "survey-report-{$validated['start_date']}-to-{$validated['end_date']}.xlsx";
-
-        return Excel::download(new SurveyResponsesExport($validated['start_date'], $validated['end_date']), $filename);
+        return $action->execute(ReportPeriodData::fromRequest($request));
     }
 }

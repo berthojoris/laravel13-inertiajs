@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\Department;
+use App\Enums\SurveyChannel;
 use App\Models\SurveyResponse;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -22,9 +24,9 @@ class SurveyResponseFactory extends Factory
             'user_id' => User::factory(),
             'respondent_name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
-            'department' => fake()->randomElement(['Operations', 'Sales', 'Marketing', 'Product', 'Support']),
+            'department' => fake()->randomElement(Department::cases()),
             'satisfaction_score' => fake()->numberBetween(1, 5),
-            'channel' => fake()->randomElement(['Website', 'Email', 'WhatsApp', 'Walk-in']),
+            'channel' => fake()->randomElement(SurveyChannel::cases()),
             'feedback' => fake()->sentence(12),
             'created_at' => fake()->dateTimeBetween('-90 days', 'now'),
             'updated_at' => now(),

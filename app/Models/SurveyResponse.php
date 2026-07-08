@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\Department;
+use App\Enums\SurveyChannel;
 use Database\Factories\SurveyResponseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,9 +16,9 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property string $respondent_name
  * @property string $email
- * @property string $department
+ * @property Department $department
  * @property int $satisfaction_score
- * @property string $channel
+ * @property SurveyChannel $channel
  * @property string|null $feedback
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -33,5 +35,17 @@ class SurveyResponse extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'department' => Department::class,
+            'satisfaction_score' => 'integer',
+            'channel' => SurveyChannel::class,
+        ];
     }
 }

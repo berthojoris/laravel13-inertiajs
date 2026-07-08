@@ -7,10 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import { CHANNELS, DEPARTMENTS } from '@/lib/survey';
 import { create, store } from '@/routes/survey';
-
-const departments = ['Operations', 'Sales', 'Marketing', 'Product', 'Support'];
-const channels = ['Website', 'Email', 'WhatsApp', 'Walk-in'];
 
 export default function Survey() {
     return (
@@ -77,7 +75,7 @@ export default function Survey() {
                                                         <SelectValue placeholder="Pilih departemen" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {departments.map((department) => (
+                                                        {DEPARTMENTS.map((department) => (
                                                             <SelectItem key={department} value={department}>{department}</SelectItem>
                                                         ))}
                                                     </SelectContent>
@@ -91,7 +89,7 @@ export default function Survey() {
                                                         <SelectValue placeholder="Pilih channel" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {channels.map((channel) => (
+                                                        {CHANNELS.map((channel) => (
                                                             <SelectItem key={channel} value={channel}>{channel}</SelectItem>
                                                         ))}
                                                     </SelectContent>
