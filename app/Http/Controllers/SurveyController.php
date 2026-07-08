@@ -24,6 +24,6 @@ class SurveyController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Survey response saved.')]);
 
-        return to_route('survey-results.index');
+        return to_route('survey.create');
     }
 }

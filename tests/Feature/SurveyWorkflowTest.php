@@ -45,7 +45,7 @@ class SurveyWorkflowTest extends TestCase
             'feedback' => 'Dashboard mudah digunakan.',
         ]);
 
-        $response->assertRedirect(route('survey-results.index'));
+        $response->assertRedirect(route('survey.create'));
 
         $this->assertDatabaseHas('survey_responses', [
             'user_id' => $user->id,

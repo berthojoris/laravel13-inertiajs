@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { create } from '@/routes/survey';
+import { Spinner } from '@/components/ui/spinner';
+import { create, store } from '@/routes/survey';
 
 const departments = ['Operations', 'Sales', 'Marketing', 'Product', 'Support'];
 const channels = ['Website', 'Email', 'WhatsApp', 'Walk-in'];
@@ -46,7 +47,7 @@ export default function Survey() {
                             <CardDescription>Isi data dummy survey untuk kebutuhan analitik.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Form {...create.form()} className="grid gap-5">
+                            <Form {...store.form()} resetOnSuccess className="grid gap-5">
                                 {({ processing, errors }) => (
                                     <>
                                         <div className="grid gap-2">
@@ -106,7 +107,10 @@ export default function Survey() {
                                         </div>
 
                                         <div className="flex justify-end">
-                                            <Button disabled={processing}>Simpan survey</Button>
+                                            <Button disabled={processing} aria-busy={processing}>
+                                                {processing && <Spinner />}
+                                                {processing ? 'Menyimpan...' : 'Simpan survey'}
+                                            </Button>
                                         </div>
                                     </>
                                 )}

@@ -21,7 +21,7 @@ class SurveyResultController extends Controller
                     ->orWhere('channel', 'like', "%{$search}%");
             }))
             ->latest()
-            ->paginate(10)
+            ->paginate(5)
             ->withQueryString()
             ->through(fn (SurveyResponse $response) => [
                 'id' => $response->id,

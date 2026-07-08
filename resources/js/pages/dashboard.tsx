@@ -40,16 +40,16 @@ export default function Dashboard({
             <Head title="Dashboard" />
 
             <div className="space-y-6 p-4 sm:p-6">
-                <section className="overflow-hidden rounded-xl border bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary))_45%,hsl(var(--muted))_45%,hsl(var(--muted))_100%)] p-6 text-primary-foreground dark:bg-[linear-gradient(135deg,hsl(var(--secondary))_0%,hsl(var(--secondary))_55%,hsl(var(--muted))_55%,hsl(var(--muted))_100%)] dark:text-foreground">
+                <section className="overflow-hidden rounded-xl border bg-primary p-6 text-primary-foreground">
                     <div className="max-w-3xl space-y-3">
-                        <Badge variant="secondary" className="bg-white/15 text-white dark:bg-background dark:text-foreground">
+                        <Badge variant="secondary" className="bg-primary-foreground/15 text-primary-foreground">
                             Analytics overview
                         </Badge>
                         <div className="space-y-2">
                             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
                                 Survey intelligence dashboard
                             </h1>
-                            <p className="max-w-2xl text-sm text-white/80 dark:text-muted-foreground">
+                            <p className="max-w-2xl text-sm text-primary-foreground/80">
                                 Pantau tren kepuasan, channel responden, dan kualitas feedback dalam satu tampilan analitik modern.
                             </p>
                         </div>
