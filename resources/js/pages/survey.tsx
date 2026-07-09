@@ -1,4 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
+import type { FormComponentRef } from '@inertiajs/core';
 import {
     BarChart3,
     CheckCircle2,
@@ -10,6 +11,7 @@ import {
     Star,
     UserRound,
 } from 'lucide-react';
+import { useRef } from 'react';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,7 +32,12 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { CHANNELS, DEPARTMENTS } from '@/lib/survey';
+import {
+    CHANNELS,
+    DEPARTMENTS,
+    validateSurveyForm,
+    type SurveyFormValues,
+} from '@/lib/survey';
 import { create, store } from '@/routes/survey';
 
 const scoreGuides = [
@@ -46,6 +53,8 @@ const captureSteps = [
 ];
 
 export default function Survey() {
+    const formRef = useRef<FormComponentRef<SurveyFormValues>>(null);
+
     return (
         <>
             <Head title="Survey" />
@@ -127,10 +136,30 @@ export default function Survey() {
                         <CardContent>
                             <Form
                                 {...store.form()}
+                                ref={formRef}
+                                noValidate
                                 resetOnSuccess
                                 className="grid gap-5"
+                                onBefore={() => {
+                                    const data =
+                                        formRef.current?.getData() ?? {};
+                                    const nextErrors = validateSurveyForm(data);
+
+                                    formRef.current?.clearErrors();
+
+                                    if (Object.keys(nextErrors).length > 0) {
+                                        formRef.current?.setError(nextErrors);
+                                        return false;
+                                    }
+
+                                    return true;
+                                }}
                             >
-                                {({ processing, errors }) => (
+                                {({
+                                    processing,
+                                    errors,
+                                    clearErrors,
+                                }) => (
                                     <>
                                         <div className="grid gap-2">
                                             <Label htmlFor="respondent_name">
@@ -143,7 +172,14 @@ export default function Survey() {
                                                     name="respondent_name"
                                                     placeholder="Contoh: Budi Santoso"
                                                     className="pl-9"
-                                                    required
+                                                    aria-invalid={
+                                                        !!errors.respondent_name
+                                                    }
+                                                    onChange={() =>
+                                                        clearErrors(
+                                                            'respondent_name',
+                                                        )
+                                                    }
                                                 />
                                             </div>
                                             <InputError
@@ -160,11 +196,18 @@ export default function Survey() {
                                                     <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                                                     <Input
                                                         id="email"
-                                                        type="email"
+                                                        type="text"
+                                                        inputMode="email"
+                                                        autoComplete="email"
                                                         name="email"
                                                         placeholder="nama@email.com"
                                                         className="pl-9"
-                                                        required
+                                                        aria-invalid={
+                                                            !!errors.email
+                                                        }
+                                                        onChange={() =>
+                                                            clearErrors('email')
+                                                        }
                                                     />
                                                 </div>
                                                 <InputError
@@ -181,11 +224,16 @@ export default function Survey() {
                                                         id="satisfaction_score"
                                                         type="number"
                                                         name="satisfaction_score"
-                                                        min="1"
-                                                        max="5"
                                                         defaultValue="5"
                                                         className="pl-9"
-                                                        required
+                                                        aria-invalid={
+                                                            !!errors.satisfaction_score
+                                                        }
+                                                        onChange={() =>
+                                                            clearErrors(
+                                                                'satisfaction_score',
+                                                            )
+                                                        }
                                                     />
                                                 </div>
                                                 <InputError
@@ -201,10 +249,19 @@ export default function Survey() {
                                                 <Label>Departemen</Label>
                                                 <Select
                                                     name="department"
-                                                    required
                                                     defaultValue="Operations"
+                                                    onValueChange={() =>
+                                                        clearErrors(
+                                                            'department',
+                                                        )
+                                                    }
                                                 >
-                                                    <SelectTrigger className="w-full">
+                                                    <SelectTrigger
+                                                        className="w-full"
+                                                        aria-invalid={
+                                                            !!errors.department
+                                                        }
+                                                    >
                                                         <SelectValue placeholder="Pilih departemen" />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -232,10 +289,17 @@ export default function Survey() {
                                                 <Label>Channel</Label>
                                                 <Select
                                                     name="channel"
-                                                    required
                                                     defaultValue="Website"
+                                                    onValueChange={() =>
+                                                        clearErrors('channel')
+                                                    }
                                                 >
-                                                    <SelectTrigger className="w-full">
+                                                    <SelectTrigger
+                                                        className="w-full"
+                                                        aria-invalid={
+                                                            !!errors.channel
+                                                        }
+                                                    >
                                                         <SelectValue placeholder="Pilih channel" />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -271,7 +335,13 @@ export default function Survey() {
                                                     id="feedback"
                                                     name="feedback"
                                                     rows={5}
-                                                    className="min-h-32 w-full rounded-md border border-input bg-transparent px-3 py-2 pl-9 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                    aria-invalid={
+                                                        !!errors.feedback
+                                                    }
+                                                    onChange={() =>
+                                                        clearErrors('feedback')
+                                                    }
+                                                    className="min-h-32 w-full rounded-md border border-input bg-transparent px-3 py-2 pl-9 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
                                                     placeholder="Tulis komentar responden, konteks masalah, atau insight yang perlu ditindaklanjuti"
                                                 />
                                             </div>
