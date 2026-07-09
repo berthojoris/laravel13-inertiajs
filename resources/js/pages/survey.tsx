@@ -187,8 +187,8 @@ export default function Survey() {
                                             />
                                         </div>
 
-                                        <div className="grid gap-4 sm:grid-cols-2">
-                                            <div className="grid gap-2">
+                                        <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 sm:grid-rows-[auto_auto_auto]">
+                                            <div className="grid gap-2 sm:row-span-3 sm:grid-rows-subgrid">
                                                 <Label htmlFor="email">
                                                     Email
                                                 </Label>
@@ -210,11 +210,13 @@ export default function Survey() {
                                                         }
                                                     />
                                                 </div>
-                                                <InputError
-                                                    message={errors.email}
-                                                />
+                                                <div>
+                                                    <InputError
+                                                        message={errors.email}
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="grid gap-2">
+                                            <div className="grid gap-2 sm:row-span-3 sm:grid-rows-subgrid">
                                                 <Label htmlFor="satisfaction_score">
                                                     Skor kepuasan
                                                 </Label>
@@ -236,16 +238,18 @@ export default function Survey() {
                                                         }
                                                     />
                                                 </div>
-                                                <InputError
-                                                    message={
-                                                        errors.satisfaction_score
-                                                    }
-                                                />
+                                                <div>
+                                                    <InputError
+                                                        message={
+                                                            errors.satisfaction_score
+                                                        }
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="grid gap-4 sm:grid-cols-2">
-                                            <div className="grid gap-2">
+                                        <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 sm:grid-rows-[auto_auto_auto]">
+                                            <div className="grid gap-2 sm:row-span-3 sm:grid-rows-subgrid">
                                                 <Label>Departemen</Label>
                                                 <Select
                                                     name="department"
@@ -281,11 +285,15 @@ export default function Survey() {
                                                         )}
                                                     </SelectContent>
                                                 </Select>
-                                                <InputError
-                                                    message={errors.department}
-                                                />
+                                                <div>
+                                                    <InputError
+                                                        message={
+                                                            errors.department
+                                                        }
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="grid gap-2">
+                                            <div className="grid gap-2 sm:row-span-3 sm:grid-rows-subgrid">
                                                 <Label>Channel</Label>
                                                 <Select
                                                     name="channel"
@@ -319,9 +327,11 @@ export default function Survey() {
                                                         )}
                                                     </SelectContent>
                                                 </Select>
-                                                <InputError
-                                                    message={errors.channel}
-                                                />
+                                                <div>
+                                                    <InputError
+                                                        message={errors.channel}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
 
