@@ -192,14 +192,15 @@ class SurveyResponseRepository
     public function monthlyCounts(int $months): array
     {
         $start = now()->startOfMonth()->subMonths($months - 1);
+        $monthExpression = $this->monthKeyExpression('created_at');
 
         $rows = SurveyResponse::query()
             ->select(
-                DB::raw("strftime('%Y-%m', created_at) as month_key"),
+                DB::raw("{$monthExpression} as month_key"),
                 DB::raw('count(*) as total'),
             )
             ->where('created_at', '>=', $start)
-            ->groupBy(DB::raw("strftime('%Y-%m', created_at)"))
+            ->groupBy(DB::raw($monthExpression))
             ->pluck('total', 'month_key')
             ->map(fn ($total): int => (int) $total);
 
@@ -217,10 +218,12 @@ class SurveyResponseRepository
      */
     public function dailyCounts(int $days): array
     {
+        $dateExpression = $this->dateKeyExpression('created_at');
+
         $rows = SurveyResponse::query()
-            ->select(DB::raw('date(created_at) as date'), DB::raw('count(*) as count'))
+            ->select(DB::raw("{$dateExpression} as date"), DB::raw('count(*) as count'))
             ->whereDate('created_at', '>=', now()->subDays($days - 1))
-            ->groupBy(DB::raw('date(created_at)'))
+            ->groupBy(DB::raw($dateExpression))
             ->pluck('count', 'date')
             ->map(fn ($count) => (int) $count);
 
@@ -231,5 +234,28 @@ class SurveyResponseRepository
                 return ['date' => $date, 'count' => $rows->get($date, 0)];
             })
             ->all();
+    }
+
+    private function monthKeyExpression(string $column): string
+    {
+        return match ($this->driver()) {
+            'mysql', 'mariadb' => "DATE_FORMAT({$column}, '%Y-%m')",
+            'pgsql' => "to_char({$column}, 'YYYY-MM')",
+            default => "strftime('%Y-%m', {$column})",
+        };
+    }
+
+    private function dateKeyExpression(string $column): string
+    {
+        return match ($this->driver()) {
+            'mysql', 'mariadb' => "DATE({$column})",
+            'pgsql' => "{$column}::date",
+            default => "date({$column})",
+        };
+    }
+
+    private function driver(): string
+    {
+        return SurveyResponse::query()->getConnection()->getDriverName();
     }
 }
