@@ -1,10 +1,8 @@
 # AGENTS.md — AI Development Guidelines
 
-## Laravel 13 + Inertia.js v3
+This repository is maintained by humans and AI coding agents. Every rule below is mandatory for this **Laravel 13 + Inertia.js v3** app.
 
-This repository is maintained by both humans and AI coding agents. Every rule below is mandatory. When multiple approaches are possible, always choose the one that is easier to maintain, scalable, testable, readable, follows Laravel conventions, follows SOLID principles, and production-ready.
-
-> Never optimize for fewer lines of code. Always optimize for maintainability.
+> Prefer maintainability over cleverness or fewer lines of code.
 
 ---
 
@@ -12,51 +10,59 @@ This repository is maintained by both humans and AI coding agents. Every rule be
 
 | Layer | Technology |
 |---|---|
-| Framework | Laravel 13, PHP 8.4+ |
-| Frontend | React 19, Inertia.js v3, TypeScript, Vite, Tailwind CSS v4 |
-| Database | SQLite |
-| Authentication | Laravel Starter Kit / Laravel Auth, Policies, Gates |
-| Queue / Cache | Laravel Queue, Redis |
-| Filesystem | Laravel Filesystem |
+| Backend | PHP ^8.3, Laravel 13 |
+| Frontend | React 19, Inertia.js v3, TypeScript, Vite, Tailwind CSS v4, shadcn/ui |
+| Auth | Laravel Fortify + Passkeys + 2FA |
+| Routing | Wayfinder (typed route helpers) |
+| Database | SQLite (default); queue/cache use `database` drivers |
+| Export | Maatwebsite Excel (`app/Exports`) |
+| Quality | Pest, Pint, Larastan/PHPStan, ESLint, Prettier |
 
 ---
 
 ## Architecture — Layered
 
-This project follows **Layered Architecture**. Business logic must never be placed inside Controllers, Models, Middleware, Routes, Console Commands, Jobs, Events, or Listeners. Business logic belongs only inside **Service / Action** classes.
+Business logic must **not** live in Controllers, Models, Middleware, Routes, or Fortify view wiring. Put it in **Actions** and/or **Services**. All Eloquent access goes through **Repositories**.
 
-### Data Flow
+### Data flow
 
+```text
+Write / command:
+  Controller → authorize → FormRequest → Action → Repository → Model
+  (DTO between Request and Action)
+
+Read / query:
+  Controller → authorize → Service and/or Repository → Inertia props
+  (Action optional for simple reads)
 ```
-Controller  →  Action  →  Service  →  Repository  →  Model
-```
 
-### Directory Structure
+Do **not** invent a Service when an Action + Repository is enough. Do **not** invent an Action for a thin read that only paginates or builds metrics.
+
+### Directory structure (actual)
 
 ```text
 app/
-├── Actions/
-├── Services/
-├── Repositories/
-├── DTO/               # Data Transfer Objects
-├── Data/
-├── Queries/
-├── Policies/
+├── Actions/           # One use case per class; execute(...)
+│   ├── Fortify/       # Fortify contracts (exception to FormRequest rule)
+│   ├── Settings/
+│   └── Survey/
+├── Concerns/          # Shared validation rule traits
+├── DTO/               # *Data value objects
 ├── Enums/
-├── Exceptions/
+├── Exports/           # Laravel Excel export classes
 ├── Http/
-│   ├── Controllers/
-│   ├── Requests/      # FormRequest classes
-│   └── Resources/     # API Resources
+│   ├── Controllers/   # Thin: authorize, call Action/Service, return
+│   ├── Middleware/    # Includes HandleInertiaRequests (shared props)
+│   ├── Requests/      # FormRequest
+│   └── Resources/     # Transform models for Inertia props when useful
 ├── Models/
-├── Events/
-├── Jobs/
-├── Listeners/
-├── Observers/
+├── Policies/          # Mandatory for domain resources
 ├── Providers/
-├── Support/
-└── Traits/
+├── Repositories/      # All Eloquent / Query Builder
+└── Services/          # Reusable domain logic (e.g. dashboard metrics)
 ```
+
+Create `Exceptions/`, `Jobs/`, `Events/`, etc. only when the feature needs them (YAGNI).
 
 ---
 
@@ -64,367 +70,216 @@ app/
 
 ### Controllers
 
-Controllers **must only**: authorize, validate (via FormRequest), call an Action or Service, return a response.
+Controllers **must only**: authorize, accept a FormRequest (when input exists), call an Action or Service, return a redirect / Inertia response / download.
 
-Controllers **must never**: query the database, contain business logic, manipulate collections extensively, or exceed ~30 lines.
+Controllers **must never**: query Eloquent directly, contain business logic, or grow into “god” classes.
 
 ```php
-// Bad — business logic in controller
-public function store(Request $request): RedirectResponse {
-    $data = $request->validate([...]);
-    $item = Item::create($data);
-    Mail::to($item->user)->send(new ItemCreated($item));
-    return redirect('/items');
-}
-
-// Good — thin controller, delegates to Action
+// Good — authorize, then Action + DTO
 public function store(
-    StoreItemRequest $request,
-    CreateItemAction $action,
+    StoreSurveyResponseRequest $request,
+    StoreSurveyResponseAction $action,
 ): RedirectResponse {
-    $action->execute(ItemData::fromRequest($request));
-    return redirect('/items');
+    $this->authorize('create', SurveyResponse::class);
+    $action->execute(SurveyResponseData::fromRequest($request));
+
+    return to_route('survey.create');
 }
 ```
+
+Base `Controller` uses `AuthorizesRequests`.
 
 ### Actions
 
-One use case per Action. One public method: `execute(...)`. No static methods.
-
-```php
-class CreateUserAction
-{
-    public function __construct(
-        private readonly UserRepository $repository,
-    ) {}
-
-    public function execute(UserData $data): User { /* ... */ }
-}
-```
+- One use case per class.
+- One public method: `execute(...)`.
+- No static methods.
+- Receive DTOs (or primitives), not raw `Request` — except when session/auth side effects truly need the request (e.g. logout + invalidate session). Prefer extracting only what is needed.
 
 ### Services
 
-Reusable business logic. May call repositories.
-
-```php
-class InvoiceCalculatorService { /* ... */ }
-class PriceService { /* ... */ }
-```
+Reusable domain logic that may call one or more repositories (example: `DashboardMetricsService`). Not required on every path.
 
 ### Repositories
 
 All Eloquent / Query Builder access lives here. Controllers must never use Eloquent directly.
 
-```php
-class UserRepository
-{
-    public function __construct(private readonly User $model) {}
-
-    public function findByEmail(string $email): ?User
-    {
-        return $this->model->where('email', $email)->first();
-    }
-}
-```
-
 ### Models
 
-Represent persistence only.
+Persistence only: relationships, scopes, casts, accessors/mutators, factories.
 
-**Allowed**: relationships, scopes, casts, accessors, mutators, observers.
-
-**Not allowed**: business logic, complex calculations, API integrations.
+Keep inverse relations complete when FKs exist (e.g. `User::surveyResponses()` and `SurveyResponse::user()`).
 
 ### Validation
 
-Always use `FormRequest`. Never validate inside a controller.
+App routes: always `FormRequest`. Never `$request->validate()` inside a controller.
+
+**Fortify exception:** `app/Actions/Fortify/*` may use `Validator::make` to satisfy Fortify contracts. Do not force FormRequest into Fortify Actions.
+
+Shared rule sets belong in `app/Concerns/` (e.g. `ProfileValidationRules`).
+
+### Authorization — Policies are mandatory
+
+**Authorization Policies are a must** for every domain resource that has routes (viewAny, create, update, delete, export, …). `auth` / `verified` middleware alone is **not** enough.
+
+**Required:**
+
+- Policy at `app/Policies/{Model}Policy.php`
+- `$this->authorize(...)` (or `Gate::authorize`) in the controller **before** Actions / Services
+- Unit tests for non-trivial ownership / ability rules
+
+**Forbidden:**
+
+- Shipping feature routes with only `auth` / `verified` and no Policy
+- Manual permission `if` checks scattered in controllers
 
 ```php
-// Good
-class StoreUserRequest extends FormRequest
-{
-    public function rules(): array
-    {
-        return ['email' => ['required', 'email', Rule::unique('users')]];
-    }
-}
+$this->authorize('create', SurveyResponse::class);
+$this->authorize('export', SurveyResponse::class);
+$this->authorize('viewAny', SurveyResponse::class);
 ```
 
-### Authorization
+**Own-account settings** (profile / password) still go through FormRequest + Actions. Prefer a `UserPolicy` (or equivalent Gate) when settings grow beyond “edit self”; until then, keep settings thin and never put Eloquent in those controllers.
 
-Always use Policies or Gates. Never manually check permissions inside a controller.
+Use Gates only for cross-cutting abilities not tied to a single model.
 
 ### DTO
 
-Use DTO objects when passing structured data. Never pass raw request objects into Services.
+Pass structured data via `*Data` objects. Never pass a raw `Request` into Services.
 
 ```php
-// Good
-$action->execute(UserData::fromRequest($request));
-
-// Bad
-$action->execute($request);
-```
-
-### Database
-
-Always use Migration, Seeder, Factory. Never manually modify the schema. Never use raw SQL unless absolutely necessary. Prefer Eloquent or Query Builder via Repository.
-
-### Eloquent
-
-Always eager load. Avoid N+1. Use `with()`, `load()`, `loadMissing()`, and scopes.
-
-```php
-// Good
-User::with('orders')->where('active', true)->first();
-```
-
-### Transactions
-
-When updating multiple tables, always use `DB::transaction()`.
-
-### API Integrations
-
-All external API logic belongs in `Services/Integrations`. Never call HTTP directly inside controllers.
-
-```php
-Http::retry(3, 100)->timeout(10)->post('https://api.example.com/orders', $data);
-```
-
-Always handle timeouts, retries, and exceptions.
-
-### Exceptions
-
-Create custom exceptions. Never throw generic `Exception`.
-
-```php
-throw new InsufficientBalanceException('Balance too low');
+$action->execute(SurveyResponseData::fromRequest($request));
 ```
 
 ### Enums
 
-Use PHP Enums. Never use magic strings.
+Use PHP Enums for fixed domain values. Never magic strings for departments, channels, statuses, etc.
+
+### Database
+
+Always Migration + Factory (+ Seeder when demo/local data matters). Prefer Query Builder / Eloquent via Repository over raw SQL.
+
+### Inertia responses & Resources
+
+Prefer `Http\Resources\*` when shaping model collections for pages (example: survey results). Dashboard aggregates may return plain arrays from a Service.
+
+Flash user feedback with:
 
 ```php
-// Good
-$status = OrderStatus::Paid;
-
-// Bad
-$status = 'paid';
+Inertia::flash('toast', ['type' => 'success', 'message' => __('Saved.')]);
 ```
 
-### Events
+Shared props live in `HandleInertiaRequests` (`auth.user`, `name`, `sidebarOpen`). Add new global props there — not ad hoc in every controller.
 
-Fire events only after successful business operations.
+### Dependency injection
 
-```php
-UserRegistered::dispatch($user);
-OrderPaid::dispatch($order);
-```
+Constructor injection only. Do not `new` Services / Repositories / Actions inside controllers.
 
-### Jobs
+### Other defaults
 
-Heavy tasks must always use queues. Examples: email, import, export, PDF, video processing, notifications. Never perform long-running tasks synchronously.
-
-### Caching
-
-```php
-Cache::remember('key', now()->addMinutes(10), fn () => ExpensiveQuery::run());
-```
-
-Always define TTL.
-
-### Logging
-
-Use `Log::info()`, `Log::warning()`, `Log::error()`. **Never** use `dd()`, `dump()`, `var_dump()`, or `print_r()` in production code.
-
-### Configuration
-
-Never hardcode URLs, API keys, secrets, or timeouts. Use config files. Never access `env()` outside config files — always use `config()`.
-
-### Dependency Injection
-
-Always use constructor injection. **Never** instantiate services manually.
-
-```php
-// Bad
-$service = new PaymentService();
-
-// Good
-public function __construct(
-    private readonly PaymentService $service,
-) {}
-```
+- Multi-table writes → `DB::transaction()`
+- Heavy work → queues (when introduced)
+- Config via `config()`, never `env()` outside config files
+- Logging via `Log::*` — never leave `dd()` / `dump()` in committed code
 
 ---
 
 ## Frontend
 
-### Technology
-
-React 19, Inertia.js v3, TypeScript, functional components, custom hooks, Vite, Tailwind CSS v4.
-
-### Directory Structure
+### Layout
 
 ```text
 resources/js/
-├── components/   # Reusable UI components
-├── hooks/        # Custom React hooks
-├── layouts/      # Page layouts
-├── lib/          # Utilities and constants
-├── pages/        # Inertia page components
-├── types/        # Shared TypeScript types and interfaces
-├── utils/        # Helper functions
+├── components/        # App components
+│   └── ui/            # shadcn/ui primitives — extend these
+├── hooks/
+├── layouts/
+├── lib/               # utils + domain helpers (not utils/)
+├── pages/             # Inertia pages (default export)
+├── types/
 └── app.tsx
 ```
 
 ### Always
 
-- Use functional components only.
-- Type every component, hook, and utility. Never use `any`.
-- Prefer composition through custom hooks.
-- Keep components small and focused on a single responsibility.
-- Reuse shared components.
-- Use named exports unless a framework convention requires a default export.
-- Keep page components thin — move business logic into Actions and Services.
-- Use path aliases (`@/`), not long relative imports.
-- Use custom hooks for: Authentication, Permissions, Data fetching, Pagination, Debouncing, Dialogs, Toast notifications.
+- Functional components + TypeScript — no `any` unless unavoidable
+- Path alias `@/`
+- Keep pages thin; extract UI into components and helpers into `lib/` / hooks
+- Extend **shadcn** under `components/ui/` — do not invent a parallel primitive set
+- Pages use **default export** (Inertia). Shared components prefer named exports
 
-### Never
+### Inertia + Wayfinder
 
-- Use class components.
-- Put business logic inside React components.
-- Call APIs directly inside reusable UI components.
-- Duplicate UI or business logic.
-- Create components larger than ~300 lines without justification.
-- Use `any` unless absolutely unavoidable.
-
-### React Best Practices
-
-- Prefer derived state over duplicated state.
-- Use Context only for truly global state. Prefer prop composition.
-- Memoize only when profiling shows measurable benefit.
-- Prefer controlled components for forms.
-- Split components when they exceed ~200–300 lines or have multiple responsibilities.
-- Always type component props using TypeScript interfaces or type aliases.
-
-### Inertia
-
-- Use `router.visit()`, `router.post()`, `router.put()`, `router.patch()`, `router.delete()`.
-- Use `useForm()` for forms.
-- Use partial reloads, deferred props, lazy props, remember state. Use polling only when necessary.
+- Prefer Wayfinder helpers (`@/routes/...`, `.form()`) over hardcoded URLs
+- Prefer Inertia `<Form>` + Wayfinder for standard forms
+- Use `router.visit` / `router.get` / `router.post` / etc. for imperative navigation
+- Use partial reloads, deferred/lazy props, or polling **only when the page needs them**
+- Toasts: rely on flash + `use-flash-toast` / Sonner — do not invent a second notification channel
 
 ### Styling
 
-Tailwind CSS only. No inline styles. Extract repeated classes into shared components.
-
-### API Resources
-
-Always use Laravel API Resources. Never return raw models from an API.
-
-### File Upload
-
-Always validate `type`, `size`, `mime`. Use Storage facade. Never use `public_path()` for uploads.
-
-### Pagination
-
-Always use Laravel paginator. Never manually paginate collections.
-
-### Query Optimization
-
-Prefer `exists()` over `count()` when checking existence. Use `chunk()`, `lazy()`, or `cursor()` for large datasets.
+Tailwind CSS only. No inline style objects for layout/skinning unless a library requires it.
 
 ---
 
-## Code Quality
-
-### Naming
+## Naming
 
 | Element | Convention | Example |
 |---|---|---|
-| Controller | PascalCase | `UserController` |
-| Action | PascalCase + Action suffix | `CreateUserAction` |
-| Service | PascalCase | `UserService` |
-| Repository | PascalCase + Repository suffix | `UserRepository` |
-| DTO | PascalCase + Data suffix | `UserData` |
-| Policy | PascalCase + Policy suffix | `UserPolicy` |
-| FormRequest | PascalCase + Request suffix | `StoreUserRequest` |
-| Resource | PascalCase + Resource suffix | `UserResource` |
-
-### SOLID
-
-Every code must respect: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion.
-
-### DRY
-
-Never duplicate business logic. Extract reusable code.
-
-### KISS
-
-Choose the simplest maintainable solution. Avoid unnecessary abstractions.
-
-### YAGNI
-
-Do not build features that are not requested.
-
-### Code Style
-
-Follow Laravel Pint and PSR-12. Keep methods short. Prefer early return. Avoid nested if statements.
-
-### Comments
-
-Write self-documenting code. Only comment **why**, never **what**.
+| Controller | PascalCase | `SurveyController` |
+| Action | PascalCase + `Action` | `StoreSurveyResponseAction` |
+| Service | PascalCase | `DashboardMetricsService` |
+| Repository | PascalCase + `Repository` | `SurveyResponseRepository` |
+| DTO | PascalCase + `Data` | `SurveyResponseData` |
+| Policy | PascalCase + `Policy` | `SurveyResponsePolicy` |
+| FormRequest | PascalCase + `Request` | `StoreSurveyResponseRequest` |
+| Resource | PascalCase + `Resource` | `SurveyResponseResource` |
 
 ---
 
-## Testing
+## Testing & tooling
 
-Every new feature must include:
+Every feature should include:
 
-- **Feature Tests** — end-to-end behavior
-- **Unit Tests** — for Services and Actions
-- **Repository Tests** — when needed
+- **Feature tests** — HTTP / Inertia behavior (Pest)
+- **Unit tests** — Actions, Services, Policies when logic is non-trivial
 
-Prefer Pest.
+Commands:
+
+```bash
+composer test          # config:clear + Pint check + PHPStan + Pest
+composer lint          # Pint
+composer types:check   # PHPStan
+npm run lint           # ESLint
+npm run types:check    # tsc --noEmit
+npm run format         # Prettier
+```
+
+Clear config cache before debugging flaky HTTP tests (`419` often means stale `config:cache` in local).
 
 ---
 
-## Security
+## Security (project-specific)
 
-- Always validate input.
-- Escape output.
-- Use CSRF.
-- Use Policies.
-- Never trust frontend input.
-- Prevent mass assignment — use `fillable` or `guarded` correctly.
-
----
-
-## Performance
-
-- Always eager load (`with()`).
-- Avoid duplicate queries.
-- Cache expensive operations. Always define TTL.
-- Queue heavy work.
-- Optimize pagination.
+- Validate with FormRequest
+- **Policies are mandatory** for domain resources — never rely on `auth` alone
+- CSRF is framework-handled; do not disable it
+- Never trust frontend-only checks
+- Mass assignment via `fillable` / `guarded` (or model attributes) correctly
 
 ---
 
 ## AI Agent Checklist
 
-When generating code, ensure:
+Before finishing work:
 
-- [ ] Follow Layered Architecture
-- [ ] Never place business logic inside controllers
-- [ ] Never bypass FormRequest
-- [ ] Never bypass Policies
-- [ ] Never duplicate code
-- [ ] Always use DTO
-- [ ] Always use Repository
-- [ ] Always use Service / Action
-- [ ] Always use dependency injection
-- [ ] Prefer readability over clever code
-- [ ] Follow Laravel, Inertia, React, and TypeScript best practices
-- [ ] Think like a senior architect
+- [ ] Layered write path (Controller → Action → Repository); reads may use Service/Repository
+- [ ] No Eloquent in controllers
+- [ ] FormRequest for app input (Fortify Actions excepted)
+- [ ] **Policy + `$this->authorize()`** for every protected domain route
+- [ ] DTO between Request and Action/Service
+- [ ] Enums for fixed domain values; factories/migrations for schema/data
+- [ ] Wayfinder + Inertia patterns; shadcn for UI primitives
+- [ ] Pest coverage for the feature; Pint/PHPStan clean when touching PHP
 
-The goal is production-grade code that is scalable, testable, maintainable, and follows modern Laravel 13 + Inertia.js v3 best practices.
+Goal: production-grade Laravel 13 + Inertia.js v3 code that matches **this** repository’s conventions.
