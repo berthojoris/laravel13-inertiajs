@@ -39,3 +39,14 @@ export type ChartItem = {
     label: string;
     value: number;
 };
+
+export type ScoreListEntry = {
+    label: string;
+    value: number;
+    suffix?: string;
+};
+
+export type HeatmapCell = {
+    date: string;
+    count: number;
+};

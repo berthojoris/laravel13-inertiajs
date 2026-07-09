@@ -258,3 +258,106 @@ export function ScoreRadar({ data }: { data: ChartItem[] }) {
         </div>
     );
 }
+
+type ScoreListEntry = {
+    label: string;
+    value: number;
+    suffix?: string;
+};
+
+export function ScoreList({ data, max = 5 }: { data: ScoreListEntry[]; max?: number }) {
+    return (
+        <div className="space-y-3">
+            {data.map((item, index) => {
+                const percent = Math.min((item.value / max) * 100, 100);
+
+                return (
+                    <div key={item.label} className="rounded-xl bg-secondary/40 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                            <span className="flex items-center gap-2 font-medium">
+                                <span className="grid size-6 place-items-center rounded-full bg-background text-xs font-semibold text-muted-foreground">
+                                    {index + 1}
+                                </span>
+                                {item.label}
+                            </span>
+                            <span className="font-semibold tabular-nums">{item.value}{item.suffix}</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-background">
+                            <div
+                                className="h-full rounded-full bg-gradient-to-r from-blue-600 to-teal-500 transition-all"
+                                style={{ width: `${percent}%` }}
+                            />
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+type HeatmapCell = {
+    date: string;
+    count: number;
+};
+
+function heatColor(intensity: number): string {
+    if (intensity <= 0) {
+        return 'bg-muted/60';
+    }
+
+    if (intensity < 0.25) {
+        return 'bg-blue-500/25';
+    }
+
+    if (intensity < 0.5) {
+        return 'bg-blue-500/45';
+    }
+
+    if (intensity < 0.75) {
+        return 'bg-blue-600/70';
+    }
+
+    return 'bg-blue-700';
+}
+
+function formatShortDate(date: string): string {
+    const parsed = new Date(`${date}T00:00:00`);
+    const day = parsed.toLocaleDateString('en-US', { day: '2-digit' });
+    const month = parsed.toLocaleDateString('en-US', { month: 'short' });
+
+    return `${day} ${month}`;
+}
+
+export function ActivityHeatmap({ data }: { data: HeatmapCell[] }) {
+    const max = safeMax(data.map((cell) => cell.count));
+
+    return (
+        <div className="space-y-4">
+            <div className="grid grid-cols-7 gap-2">
+                {data.map((cell) => {
+                    const intensity = max > 0 ? cell.count / max : 0;
+
+                    return (
+                        <div key={cell.date} className="flex flex-col items-center gap-1.5">
+                            <div
+                                className={cn('aspect-square w-full rounded-lg', heatColor(intensity))}
+                                title={`${formatShortDate(cell.date)}: ${cell.count} responses`}
+                            />
+                            <span className="text-[10px] leading-none text-muted-foreground">
+                                {formatShortDate(cell.date).split(' ')[0]}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+            <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+                <span>Less</span>
+                <span className="size-3 rounded bg-muted/60" />
+                <span className="size-3 rounded bg-blue-500/45" />
+                <span className="size-3 rounded bg-blue-600/70" />
+                <span className="size-3 rounded bg-blue-700" />
+                <span>More</span>
+            </div>
+        </div>
+    );
+}

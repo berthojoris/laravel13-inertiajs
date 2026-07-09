@@ -1,10 +1,10 @@
 import { Head } from '@inertiajs/react';
-import { Activity, ArrowUpRight, BarChart3, Download, PieChart as PieChartIcon, Sparkles, TrendingUp } from 'lucide-react';
-import { BarChart, LineChart, PieChart, ScoreRadar } from '@/components/analytics-chart';
+import { Activity, ArrowUpRight, BarChart3, CalendarDays, Download, ListChecks, PieChart as PieChartIcon, Sparkles, TrendingUp } from 'lucide-react';
+import { ActivityHeatmap, BarChart, LineChart, PieChart, ScoreList, ScoreRadar } from '@/components/analytics-chart';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { dashboard } from '@/routes';
-import type { ChartItem, Metric, PieItem } from '@/types';
+import type { ChartItem, HeatmapCell, Metric, PieItem, ScoreListEntry } from '@/types';
 
 const metricIcons = [Activity, PieChartIcon, BarChart3, Download];
 const metricAccents = [
@@ -20,13 +20,27 @@ export default function Dashboard({
     satisfactionSplit,
     channelData,
     departmentScores,
+    departmentAverages,
+    dailyActivity,
+    completionRate,
 }: {
     metrics: Metric[];
     monthlyResponses: number[];
     satisfactionSplit: PieItem[];
     channelData: ChartItem[];
     departmentScores: ChartItem[];
+    departmentAverages: ScoreListEntry[];
+    dailyActivity: HeatmapCell[];
+    completionRate: number;
 }) {
+    const insightStatus = completionRate >= 70 ? 'Healthy' : completionRate >= 40 ? 'Fair' : 'Low';
+    const insightTone =
+        completionRate >= 70
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+            : completionRate >= 40
+              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400';
+
     return (
         <>
             <Head title="Dashboard" />
@@ -53,13 +67,13 @@ export default function Dashboard({
                         <div className="grid gap-3 rounded-2xl border bg-secondary/45 p-4 backdrop-blur">
                             <div className="flex items-center justify-between gap-3">
                                 <span className="text-sm text-muted-foreground">Insight status</span>
-                                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                                    Healthy
+                                <Badge variant="secondary" className={insightTone}>
+                                    {insightStatus}
                                 </Badge>
                             </div>
                             <div className="flex items-end justify-between gap-4">
                                 <div>
-                                    <p className="text-3xl font-semibold tracking-tight">86%</p>
+                                    <p className="text-3xl font-semibold tracking-tight">{completionRate}%</p>
                                     <p className="text-sm text-muted-foreground">completion rate</p>
                                 </div>
                                 <div className="rounded-full bg-background p-3 text-foreground shadow-sm">
@@ -141,6 +155,44 @@ export default function Dashboard({
                         </CardHeader>
                         <CardContent>
                             <ScoreRadar data={departmentScores} />
+                        </CardContent>
+                    </Card>
+                </section>
+
+                <section className="grid gap-4 xl:grid-cols-2">
+                    <Card className="border-muted/80 shadow-sm">
+                        <CardHeader>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <ListChecks className="size-4 text-muted-foreground" />
+                                        Avg score by department
+                                    </CardTitle>
+                                    <CardDescription>Skor rata-rata kepuasan per departemen, diurutkan dari tertinggi.</CardDescription>
+                                </div>
+                                <Badge variant="secondary">/ 5.0</Badge>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <ScoreList data={departmentAverages} max={5} />
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-muted/80 shadow-sm">
+                        <CardHeader>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <CalendarDays className="size-4 text-muted-foreground" />
+                                        Daily activity
+                                    </CardTitle>
+                                    <CardDescription>Heatmap respon per hari dalam 14 hari terakhir.</CardDescription>
+                                </div>
+                                <Badge variant="secondary">14 days</Badge>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <ActivityHeatmap data={dailyActivity} />
                         </CardContent>
                     </Card>
                 </section>

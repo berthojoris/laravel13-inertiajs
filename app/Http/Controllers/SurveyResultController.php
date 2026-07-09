@@ -19,6 +19,8 @@ class SurveyResultController extends Controller
 
     public function __invoke(Request $request): Response
     {
+        $this->authorize('viewAny', SurveyResponse::class);
+
         $search = (string) $request->query('search', '');
 
         $responses = $this->repository->paginateFiltered($search, self::PER_PAGE)
