@@ -21,7 +21,7 @@ function Toaster({ ...props }: ToasterProps) {
             }
             toastOptions={{
                 classNames: {
-                    toast: 'relative overflow-hidden !rounded-2xl !border !bg-card !text-card-foreground !shadow-sm before:absolute before:inset-x-0 before:top-0 before:h-1 before:content-[""]',
+                    toast: 'relative overflow-hidden !rounded-none !border !bg-card !text-card-foreground !shadow-sm before:absolute before:inset-x-0 before:top-0 before:h-1 before:content-[""]',
                     success: 'before:bg-emerald-500',
                     error: 'before:bg-red-500',
                     warning: 'before:bg-amber-500',
