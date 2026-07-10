@@ -229,15 +229,28 @@ export default function Survey() {
                                                         type="number"
                                                         name="satisfaction_score"
                                                         defaultValue="5"
+                                                        min="1"
+                                                        max="5"
+                                                        step="1"
                                                         className="pl-9"
                                                         aria-invalid={
                                                             !!errors.satisfaction_score
                                                         }
-                                                        onChange={() =>
+                                                        onChange={(event) => {
+                                                            if (
+                                                                Number(
+                                                                    event.target
+                                                                        .value,
+                                                                ) > 5
+                                                            ) {
+                                                                event.target.value =
+                                                                    '5';
+                                                            }
+
                                                             clearErrors(
                                                                 'satisfaction_score',
-                                                            )
-                                                        }
+                                                            );
+                                                        }}
                                                     />
                                                 </div>
                                                 <div>
