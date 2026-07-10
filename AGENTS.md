@@ -237,6 +237,12 @@ Tailwind CSS only. No inline style objects for layout/skinning unless a library 
 
 Buttons that trigger any server process must show a loading spinner and be disabled until the process finishes. Keep the loading state clear with `aria-busy` and a temporary action label when useful.
 
+### Rendering method
+
+**Default: CSR (Client-Side Rendering).** All new pages and components must use CSR. Configure SSR off in `config/inertia.php` (`'enabled' => false`) unless the user explicitly requests otherwise.
+
+Only enable SSR, SSG, or hybrid rendering if the user specifically asks for it. Do not default to SSR.
+
 ---
 
 ## Naming
