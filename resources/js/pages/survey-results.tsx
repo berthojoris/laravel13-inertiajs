@@ -33,7 +33,7 @@ export default function SurveyResults({
             return;
         }
 
-        const timeout = setTimeout(() => runSearch(search), 5000);
+        const timeout = setTimeout(() => runSearch(search), 3000);
 
         return () => clearTimeout(timeout);
         // eslint-disable-next-line react-hooks/exhaustive-deps
