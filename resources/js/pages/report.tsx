@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { exportMethod, index } from '@/routes/report';
 
 const reportColumns = [
@@ -56,10 +57,18 @@ function formatDateLabel(date: string) {
     }).format(new Date(date));
 }
 
+function getExportFilename(response: Response) {
+    const disposition = response.headers.get('content-disposition');
+    const filename = disposition?.match(/filename="?([^";]+)"?/i)?.[1];
+
+    return filename ?? 'survey-report.xlsx';
+}
+
 export default function Report() {
     const today = toDateInputValue(new Date());
     const [startDate, setStartDate] = useState(today);
     const [endDate, setEndDate] = useState(today);
+    const [isExporting, setIsExporting] = useState(false);
 
     const isDateRangeValid = startDate <= endDate;
     const selectedDays = isDateRangeValid
@@ -71,6 +80,37 @@ export default function Report() {
     const exportUrl = exportMethod.url({
         query: { start_date: startDate, end_date: endDate },
     });
+
+    async function handleExport() {
+        if (!isDateRangeValid || isExporting) {
+            return;
+        }
+
+        setIsExporting(true);
+
+        try {
+            const response = await fetch(exportUrl, {
+                headers: { Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+            });
+
+            if (!response.ok) {
+                throw new Error('Export failed.');
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+
+            link.href = url;
+            link.download = getExportFilename(response);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } finally {
+            setIsExporting(false);
+        }
+    }
 
     return (
         <>
@@ -223,19 +263,22 @@ export default function Report() {
                                         </p>
                                     </div>
                                 </div>
-                                {isDateRangeValid ? (
-                                    <Button asChild className="shrink-0">
-                                        <a href={exportUrl}>
-                                            <Download className="size-4" />
-                                            Generate Excel
-                                        </a>
-                                    </Button>
-                                ) : (
-                                    <Button disabled className="shrink-0">
+                                <Button
+                                    type="button"
+                                    disabled={!isDateRangeValid || isExporting}
+                                    aria-busy={isExporting}
+                                    className="shrink-0"
+                                    onClick={handleExport}
+                                >
+                                    {isExporting ? (
+                                        <Spinner />
+                                    ) : (
                                         <Download className="size-4" />
-                                        Generate Excel
-                                    </Button>
-                                )}
+                                    )}
+                                    {isExporting
+                                        ? 'Membuat Excel...'
+                                        : 'Generate Excel'}
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>

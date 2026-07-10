@@ -233,6 +233,10 @@ resources/js/
 
 Tailwind CSS only. No inline style objects for layout/skinning unless a library requires it.
 
+### UI feedback
+
+Buttons that trigger any server process must show a loading spinner and be disabled until the process finishes. Keep the loading state clear with `aria-busy` and a temporary action label when useful.
+
 ---
 
 ## Naming
