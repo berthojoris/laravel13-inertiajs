@@ -9,6 +9,14 @@ export type SurveyResponse = {
     created_at: string | null;
 };
 
+export type SurveyExtraResponse = {
+    id: number;
+    user_name: string;
+    user_email: string;
+    answers: Record<string, string | string[]>;
+    created_at: string | null;
+};
+
 export type PaginationLink = {
     url: string | null;
     label: string;

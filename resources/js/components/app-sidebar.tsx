@@ -25,6 +25,7 @@ import { dashboard } from '@/routes';
 import { index as report } from '@/routes/report';
 import { create as survey } from '@/routes/survey';
 import { create as surveyExtra } from '@/routes/survey-extra';
+import { index as surveyExtraResults } from '@/routes/survey-extra-results';
 import { index as surveyResults } from '@/routes/survey-results';
 import type { NavItem } from '@/types';
 
@@ -47,6 +48,11 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Hasil Survey',
         href: surveyResults(),
+        icon: Table2,
+    },
+    {
+        title: 'Hasil Survey Extra',
+        href: surveyExtraResults(),
         icon: Table2,
     },
     {
