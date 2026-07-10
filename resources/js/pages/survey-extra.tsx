@@ -283,6 +283,19 @@ function validateRequiredFields(
         }, {});
 }
 
+function validateStepFields(
+    stepIndex: number,
+    data: SurveyExtraFormValues,
+): SurveyExtraFormErrors {
+    return steps[stepIndex].questions.reduce<SurveyExtraFormErrors>((errors, question) => {
+        if (isBlankValue(data[question.name])) {
+            errors[question.name] = `${question.label} wajib diisi.`;
+        }
+
+        return errors;
+    }, {});
+}
+
 function QuestionField({
     question,
     error,
@@ -402,16 +415,23 @@ export default function SurveyExtra() {
     }
 
     function handleNext(): void {
-        const nextErrors = validateAndSetErrors();
-        const currentStepHasErrors = activeStep.questions.some(
-            (question) => nextErrors[question.name],
-        );
+        const data = formRef.current?.getData() ?? {};
+        const nextErrors = validateStepFields(currentStep, data);
 
-        if (currentStepHasErrors) {
+        setClientErrors(nextErrors);
+        formRef.current?.clearErrors();
+
+        if (Object.keys(nextErrors).length > 0) {
             return;
         }
 
         setCurrentStep((step) => Math.min(step + 1, steps.length - 1));
+    }
+
+    function handlePrev(): void {
+        setClientErrors({});
+        formRef.current?.clearErrors();
+        setCurrentStep((step) => Math.max(step - 1, 0));
     }
 
     return (
@@ -573,16 +593,7 @@ export default function SurveyExtra() {
                                                     <Button
                                                         type="button"
                                                         variant="outline"
-                                                        onClick={() =>
-                                                            setCurrentStep(
-                                                                (step) =>
-                                                                    Math.max(
-                                                                        step -
-                                                                            1,
-                                                                        0,
-                                                                    ),
-                                                            )
-                                                        }
+                                                        onClick={handlePrev}
                                                     >
                                                         <ArrowLeft className="size-4" />
                                                         Prev
