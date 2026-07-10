@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\SurveyExtraResponse;
 use App\Models\SurveyResponse;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -14,6 +15,11 @@ test('authenticated user can render survey pages', function () {
         ->get(route('survey.create'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->component('survey'));
+
+    $this->actingAs($user)
+        ->get(route('survey-extra.create'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('survey-extra'));
 
     $this->actingAs($user)
         ->get(route('survey-results.index'))
@@ -45,6 +51,37 @@ test('user can store survey response', function () {
         'respondent_name' => 'Ayu Lestari',
         'email' => 'ayu@example.com',
     ]);
+});
+
+test('user can store survey extra response', function () {
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user)->post(route('survey-extra.store'), [
+        'q1' => 'Ayu Lestari',
+        'q2' => 'sales',
+        'q3' => ['speed', 'accuracy'],
+        'q4' => 'yes',
+        'q5' => 'Approval terlalu lama.',
+        'q6' => 'daily',
+        'q7' => ['web', 'email'],
+        'q8' => 'easy',
+        'q9' => 'Dashboard report harian',
+        'q10' => 'high',
+        'q11' => ['training', 'automation'],
+        'q12' => 'chat',
+        'q13' => 'Tambahkan notifikasi SLA.',
+        'q14' => 'three_months',
+        'q15' => ['quality', 'time'],
+    ]);
+
+    $response->assertRedirect(route('survey-extra.create'));
+
+    $extraResponse = SurveyExtraResponse::query()->firstOrFail();
+
+    expect($extraResponse->user_id)->toBe($user->id)
+        ->and($extraResponse->answers['q1'])->toBe('Ayu Lestari')
+        ->and($extraResponse->answers['q3'])->toBe(['speed', 'accuracy'])
+        ->and($extraResponse->answers['q15'])->toBe(['quality', 'time']);
 });
 
 test('survey results can be searched', function () {

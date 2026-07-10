@@ -44,6 +44,14 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * @return HasMany<SurveyExtraResponse, $this>
+     */
+    public function surveyExtraResponses(): HasMany
+    {
+        return $this->hasMany(SurveyExtraResponse::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

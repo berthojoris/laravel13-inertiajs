@@ -1,5 +1,13 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, ClipboardList, FileSpreadsheet, FolderGit2, LayoutGrid, Table2 } from 'lucide-react';
+import {
+    BookOpen,
+    ClipboardCheck,
+    ClipboardList,
+    FileSpreadsheet,
+    FolderGit2,
+    LayoutGrid,
+    Table2,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -16,6 +24,7 @@ import {
 import { dashboard } from '@/routes';
 import { index as report } from '@/routes/report';
 import { create as survey } from '@/routes/survey';
+import { create as surveyExtra } from '@/routes/survey-extra';
 import { index as surveyResults } from '@/routes/survey-results';
 import type { NavItem } from '@/types';
 
@@ -29,6 +38,11 @@ const mainNavItems: NavItem[] = [
         title: 'Survey',
         href: survey(),
         icon: ClipboardList,
+    },
+    {
+        title: 'Survey Extra',
+        href: surveyExtra(),
+        icon: ClipboardCheck,
     },
     {
         title: 'Hasil Survey',
