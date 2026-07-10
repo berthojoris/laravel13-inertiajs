@@ -29,6 +29,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import { cn } from '@/lib/utils';
 import { create, store } from '@/routes/survey-extra';
 
 type SurveyExtraFormValues = Partial<
@@ -335,7 +336,11 @@ function QuestionField({
                     {question.options.map((option) => (
                         <label
                             key={option.value}
-                            className={optionLabelClassName}
+                            className={cn(
+                                optionLabelClassName,
+                                error &&
+                                    'border-red-500 bg-red-50/50 dark:border-red-400 dark:bg-red-950/20',
+                            )}
                         >
                             <Checkbox
                                 name={`${question.name}[]`}
@@ -355,7 +360,14 @@ function QuestionField({
             <legend className="text-sm font-medium">{question.label}</legend>
             <div className="grid gap-2 sm:grid-cols-2">
                 {question.options.map((option) => (
-                    <label key={option.value} className={optionLabelClassName}>
+                    <label
+                        key={option.value}
+                        className={cn(
+                            optionLabelClassName,
+                            error &&
+                                'border-red-500 bg-red-50/50 dark:border-red-400 dark:bg-red-950/20',
+                        )}
+                    >
                         <input
                             type="radio"
                             name={question.name}
@@ -374,9 +386,33 @@ function QuestionField({
 export default function SurveyExtra() {
     const formRef = useRef<FormComponentRef<SurveyExtraFormValues>>(null);
     const [currentStep, setCurrentStep] = useState(0);
+    const [clientErrors, setClientErrors] = useState<SurveyExtraFormErrors>({});
     const activeStep = steps[currentStep];
     const isFirstStep = currentStep === 0;
     const isLastStep = currentStep === steps.length - 1;
+
+    function validateAndSetErrors(): SurveyExtraFormErrors {
+        const data = formRef.current?.getData() ?? {};
+        const nextErrors = validateRequiredFields(data);
+
+        setClientErrors(nextErrors);
+        formRef.current?.clearErrors();
+
+        return nextErrors;
+    }
+
+    function handleNext(): void {
+        const nextErrors = validateAndSetErrors();
+        const currentStepHasErrors = activeStep.questions.some(
+            (question) => nextErrors[question.name],
+        );
+
+        if (currentStepHasErrors) {
+            return;
+        }
+
+        setCurrentStep((step) => Math.min(step + 1, steps.length - 1));
+    }
 
     return (
         <>
@@ -457,10 +493,7 @@ export default function SurveyExtra() {
                             resetOnSuccess
                             className="grid gap-6"
                             onBefore={() => {
-                                const data = formRef.current?.getData() ?? {};
-                                const nextErrors = validateRequiredFields(data);
-
-                                formRef.current?.clearErrors();
+                                const nextErrors = validateAndSetErrors();
 
                                 if (Object.keys(nextErrors).length > 0) {
                                     formRef.current?.setError(nextErrors);
@@ -491,96 +524,100 @@ export default function SurveyExtra() {
                                 return true;
                             }}
                         >
-                            {({ processing, errors }) => (
-                                <>
-                                    {steps.map((step, index) => (
-                                        <div
-                                            key={step.title}
-                                            className={
-                                                index === currentStep
-                                                    ? 'grid gap-5 lg:grid-cols-2'
-                                                    : 'hidden'
-                                            }
-                                        >
-                                            {step.questions.map((question) => (
-                                                <QuestionField
-                                                    key={question.name}
-                                                    question={question}
-                                                    error={getError(
-                                                        errors,
-                                                        question.name,
-                                                    )}
-                                                />
-                                            ))}
-                                        </div>
-                                    ))}
+                            {({ processing, errors }) => {
+                                const validationErrors = {
+                                    ...errors,
+                                    ...clientErrors,
+                                };
 
-                                    <div className="flex flex-col gap-3 rounded-xl border bg-secondary/35 p-4 sm:flex-row sm:items-center sm:justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium">
-                                                Navigasi step survey extra
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                Gunakan Next dan Prev untuk
-                                                berpindah halaman. Submit hanya
-                                                tersedia di step terakhir.
-                                            </p>
+                                return (
+                                    <>
+                                        {steps.map((step, index) => (
+                                            <div
+                                                key={step.title}
+                                                className={
+                                                    index === currentStep
+                                                        ? 'grid gap-5 lg:grid-cols-2'
+                                                        : 'hidden'
+                                                }
+                                            >
+                                                {step.questions.map(
+                                                    (question) => (
+                                                        <QuestionField
+                                                            key={question.name}
+                                                            question={question}
+                                                            error={getError(
+                                                                validationErrors,
+                                                                question.name,
+                                                            )}
+                                                        />
+                                                    ),
+                                                )}
+                                            </div>
+                                        ))}
+
+                                        <div className="flex flex-col gap-3 rounded-xl border bg-secondary/35 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                            <div>
+                                                <p className="text-sm font-medium">
+                                                    Navigasi step survey extra
+                                                </p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Gunakan Next dan Prev untuk
+                                                    berpindah halaman. Submit
+                                                    hanya tersedia di step
+                                                    terakhir.
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-col gap-2 sm:flex-row">
+                                                {!isFirstStep && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        onClick={() =>
+                                                            setCurrentStep(
+                                                                (step) =>
+                                                                    Math.max(
+                                                                        step -
+                                                                            1,
+                                                                        0,
+                                                                    ),
+                                                            )
+                                                        }
+                                                    >
+                                                        <ArrowLeft className="size-4" />
+                                                        Prev
+                                                    </Button>
+                                                )}
+                                                {!isLastStep && (
+                                                    <Button
+                                                        type="button"
+                                                        onClick={handleNext}
+                                                    >
+                                                        Next
+                                                        <ArrowRight className="size-4" />
+                                                    </Button>
+                                                )}
+                                                {isLastStep && (
+                                                    <Button
+                                                        type="submit"
+                                                        disabled={processing}
+                                                        aria-busy={processing}
+                                                    >
+                                                        {processing ? (
+                                                            <Spinner />
+                                                        ) : (
+                                                            <Send className="size-4" />
+                                                        )}
+                                                        {processing
+                                                            ? 'Submitting...'
+                                                            : 'Submit Survey'}
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col gap-2 sm:flex-row">
-                                            {!isFirstStep && (
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    onClick={() =>
-                                                        setCurrentStep((step) =>
-                                                            Math.max(
-                                                                step - 1,
-                                                                0,
-                                                            ),
-                                                        )
-                                                    }
-                                                >
-                                                    <ArrowLeft className="size-4" />
-                                                    Prev
-                                                </Button>
-                                            )}
-                                            {!isLastStep && (
-                                                <Button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setCurrentStep((step) =>
-                                                            Math.min(
-                                                                step + 1,
-                                                                steps.length -
-                                                                    1,
-                                                            ),
-                                                        )
-                                                    }
-                                                >
-                                                    Next
-                                                    <ArrowRight className="size-4" />
-                                                </Button>
-                                            )}
-                                            {isLastStep && (
-                                                <Button
-                                                    type="submit"
-                                                    disabled={processing}
-                                                    aria-busy={processing}
-                                                >
-                                                    {processing ? (
-                                                        <Spinner />
-                                                    ) : (
-                                                        <Send className="size-4" />
-                                                    )}
-                                                    {processing
-                                                        ? 'Submitting...'
-                                                        : 'Submit Survey'}
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </>
-                            )}
+                                    </>
+                                );
+                            }}
                         </Form>
                     </CardContent>
                 </Card>
