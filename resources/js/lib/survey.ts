@@ -35,6 +35,7 @@ export function validateSurveyForm(
     const errors: SurveyFormErrors = {};
 
     const respondentName = data.respondent_name?.trim() ?? '';
+
     if (respondentName === '') {
         errors.respondent_name = 'Nama responden wajib diisi.';
     } else if (respondentName.length > 255) {
@@ -42,6 +43,7 @@ export function validateSurveyForm(
     }
 
     const email = data.email?.trim() ?? '';
+
     if (email === '') {
         errors.email = 'Email wajib diisi.';
     } else if (!EMAIL_PATTERN.test(email)) {
@@ -51,6 +53,7 @@ export function validateSurveyForm(
     }
 
     const department = data.department?.trim() ?? '';
+
     if (department === '') {
         errors.department = 'Departemen wajib dipilih.';
     } else if (!isDepartment(department)) {
@@ -78,6 +81,7 @@ export function validateSurveyForm(
     }
 
     const channel = data.channel?.trim() ?? '';
+
     if (channel === '') {
         errors.channel = 'Channel wajib dipilih.';
     } else if (!isChannel(channel)) {
@@ -85,6 +89,7 @@ export function validateSurveyForm(
     }
 
     const feedback = data.feedback?.trim() ?? '';
+
     if (feedback.length > 1000) {
         errors.feedback = 'Feedback maksimal 1000 karakter.';
     }

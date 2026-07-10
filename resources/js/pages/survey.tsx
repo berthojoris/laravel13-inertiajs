@@ -1,5 +1,5 @@
-import { Form, Head } from '@inertiajs/react';
 import type { FormComponentRef } from '@inertiajs/core';
+import { Form, Head } from '@inertiajs/react';
 import {
     BarChart3,
     CheckCircle2,
@@ -35,9 +35,10 @@ import { Spinner } from '@/components/ui/spinner';
 import {
     CHANNELS,
     DEPARTMENTS,
-    validateSurveyForm,
-    type SurveyFormValues,
+    validateSurveyForm
+    
 } from '@/lib/survey';
+import type {SurveyFormValues} from '@/lib/survey';
 import { create, store } from '@/routes/survey';
 
 const scoreGuides = [
@@ -149,6 +150,7 @@ export default function Survey() {
 
                                     if (Object.keys(nextErrors).length > 0) {
                                         formRef.current?.setError(nextErrors);
+
                                         return false;
                                     }
 
