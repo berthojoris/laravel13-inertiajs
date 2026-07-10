@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,11 +17,32 @@ export default function SurveyResults({
     filters: { search: string };
 }) {
     const [search, setSearch] = useState(filters.search ?? '');
+    const isInitialRender = useRef(true);
+
+    function runSearch(value: string) {
+        router.get(index.url(), { search: value }, { preserveState: true, preserveScroll: true, replace: true });
+    }
+
+    useEffect(() => {
+        if (isInitialRender.current) {
+            isInitialRender.current = false;
+            return;
+        }
+
+        if (search === (filters.search ?? '')) {
+            return;
+        }
+
+        const timeout = setTimeout(() => runSearch(search), 5000);
+
+        return () => clearTimeout(timeout);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search]);
 
     function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        router.get(index.url(), { search }, { preserveState: true, preserveScroll: true });
+        runSearch(search);
     }
 
     return (
