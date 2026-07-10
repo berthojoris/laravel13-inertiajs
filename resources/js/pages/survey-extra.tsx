@@ -512,6 +512,10 @@ export default function SurveyExtra() {
                             ref={formRef}
                             resetOnSuccess
                             className="grid gap-6"
+                            onSuccess={() => {
+                                setCurrentStep(0);
+                                setClientErrors({});
+                            }}
                             onBefore={() => {
                                 const nextErrors = validateAndSetErrors();
 
