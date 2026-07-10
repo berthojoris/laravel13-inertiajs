@@ -26,6 +26,10 @@ function Toaster({ ...props }: ToasterProps) {
                     error: 'before:bg-red-500',
                     warning: 'before:bg-amber-500',
                     info: 'before:bg-sky-500',
+                    actionButton:
+                        '!ml-auto !shrink-0 !rounded-md !border !border-white/10 !bg-[#3f3f46] !px-3 !py-1.5 !text-xs !font-medium !text-zinc-100 !shadow-sm transition-colors hover:!bg-[#52525b]',
+                    cancelButton:
+                        '!ml-auto !shrink-0 !rounded-md !border !border-border !bg-transparent !px-3 !py-1.5 !text-xs !font-medium !text-muted-foreground transition-colors hover:!bg-muted',
                 },
             }}
             {...props}
