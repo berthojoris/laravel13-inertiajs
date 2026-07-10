@@ -14,22 +14,25 @@ function Toaster({ ...props }: ToasterProps) {
             position="bottom-center"
             style={
                 {
-                    '--normal-bg': 'var(--popover)',
-                    '--normal-text': 'var(--popover-foreground)',
-                    '--normal-border': 'var(--border)',
+                    '--normal-bg': '#1c1c1e',
+                    '--normal-text': '#f4f4f5',
+                    '--normal-border': 'rgba(255,255,255,0.10)',
                 } as React.CSSProperties
             }
             toastOptions={{
                 classNames: {
-                    toast: 'relative overflow-hidden !rounded-[5px] !border !bg-card !text-card-foreground !shadow-sm before:absolute before:inset-x-0 before:top-0 before:h-1 before:content-[""]',
-                    success: 'before:bg-emerald-500',
-                    error: 'before:bg-red-500',
-                    warning: 'before:bg-amber-500',
-                    info: 'before:bg-sky-500',
+                    toast: 'flex items-center gap-3 !rounded-xl !border !border-white/10 !bg-[#1c1c1e] !px-4 !py-3 !text-zinc-100 !shadow-lg',
+                    title: '!text-sm !font-medium !text-zinc-100',
+                    description: '!text-sm !text-zinc-400',
+                    success: '[&_[data-icon]]:!text-emerald-500',
+                    error: '[&_[data-icon]]:!text-red-500',
+                    warning: '[&_[data-icon]]:!text-amber-500',
+                    info: '[&_[data-icon]]:!text-sky-500',
+                    icon: '!size-5',
                     actionButton:
                         '!ml-auto !shrink-0 !rounded-md !border !border-white/10 !bg-[#3f3f46] !px-3 !py-1.5 !text-xs !font-medium !text-zinc-100 !shadow-sm transition-colors hover:!bg-[#52525b]',
                     cancelButton:
-                        '!ml-auto !shrink-0 !rounded-md !border !border-border !bg-transparent !px-3 !py-1.5 !text-xs !font-medium !text-muted-foreground transition-colors hover:!bg-muted',
+                        '!ml-auto !shrink-0 !rounded-md !border !border-white/10 !bg-transparent !px-3 !py-1.5 !text-xs !font-medium !text-zinc-400 transition-colors hover:!bg-white/10',
                 },
             }}
             {...props}
