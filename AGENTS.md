@@ -118,6 +118,19 @@ App routes: always `FormRequest`. Never `$request->validate()` inside a controll
 
 Shared rule sets belong in `app/Concerns/` (e.g. `ProfileValidationRules`).
 
+### Read/query requests
+
+For simple read-only filters (`search`, `page`, `sort`) controllers may accept `Illuminate\Http\Request` and extract query parameters directly.
+
+Use a `FormRequest` and DTO when query parameters:
+
+- require validation beyond simple casting/defaults
+- include date ranges, enums, arrays, or multiple filters
+- are reused by an Action/Service/Export
+- affect authorization-sensitive data
+
+Even for read queries, controllers must not query Eloquent directly. Use a Repository or Service.
+
 ### Authorization — Policies are mandatory
 
 **Authorization Policies are a must** for every domain resource that has routes (viewAny, create, update, delete, export, …). `auth` / `verified` middleware alone is **not** enough.
