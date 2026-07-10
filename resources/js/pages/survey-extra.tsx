@@ -1,3 +1,4 @@
+import type { FormComponentRef } from '@inertiajs/core';
 import { Form, Head } from '@inertiajs/react';
 import {
     ArrowLeft,
@@ -6,7 +7,7 @@ import {
     ClipboardCheck,
     Send,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,12 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { create, store } from '@/routes/survey-extra';
+
+type SurveyExtraFormValues = Partial<
+    Record<string, FormDataEntryValue | FormDataEntryValue[]>
+>;
+
+type SurveyExtraFormErrors = Record<string, string>;
 
 type Option = {
     value: string;
@@ -251,6 +258,30 @@ function getError(
     return errors[name] ?? errors[`${name}.0`];
 }
 
+function isBlankValue(
+    value: FormDataEntryValue | FormDataEntryValue[] | undefined,
+): boolean {
+    if (Array.isArray(value)) {
+        return value.length === 0;
+    }
+
+    return value === undefined || String(value).trim() === '';
+}
+
+function validateRequiredFields(
+    data: SurveyExtraFormValues,
+): SurveyExtraFormErrors {
+    return steps
+        .flatMap((step) => step.questions)
+        .reduce<SurveyExtraFormErrors>((errors, question) => {
+            if (isBlankValue(data[question.name])) {
+                errors[question.name] = `${question.label} wajib diisi.`;
+            }
+
+            return errors;
+        }, {});
+}
+
 function QuestionField({
     question,
     error,
@@ -341,6 +372,7 @@ function QuestionField({
 }
 
 export default function SurveyExtra() {
+    const formRef = useRef<FormComponentRef<SurveyExtraFormValues>>(null);
     const [currentStep, setCurrentStep] = useState(0);
     const activeStep = steps[currentStep];
     const isFirstStep = currentStep === 0;
@@ -421,8 +453,43 @@ export default function SurveyExtra() {
                     <CardContent>
                         <Form
                             {...store.form()}
+                            ref={formRef}
                             resetOnSuccess
                             className="grid gap-6"
+                            onBefore={() => {
+                                const data = formRef.current?.getData() ?? {};
+                                const nextErrors = validateRequiredFields(data);
+
+                                formRef.current?.clearErrors();
+
+                                if (Object.keys(nextErrors).length > 0) {
+                                    formRef.current?.setError(nextErrors);
+
+                                    const firstErrorQuestion = steps
+                                        .flatMap((step) => step.questions)
+                                        .find(
+                                            (question) =>
+                                                nextErrors[question.name],
+                                        );
+
+                                    if (firstErrorQuestion) {
+                                        const stepIndex = steps.findIndex(
+                                            (step) =>
+                                                step.questions.some(
+                                                    (question) =>
+                                                        question.name ===
+                                                        firstErrorQuestion.name,
+                                                ),
+                                        );
+
+                                        setCurrentStep(Math.max(stepIndex, 0));
+                                    }
+
+                                    return false;
+                                }
+
+                                return true;
+                            }}
                         >
                             {({ processing, errors }) => (
                                 <>
