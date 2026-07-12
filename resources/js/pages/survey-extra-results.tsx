@@ -1,7 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -61,21 +60,11 @@ export default function SurveyExtraResults({
             return;
         }
 
-        if (search === (filters.search ?? '')) {
-            return;
-        }
-
         const timeout = setTimeout(() => runSearch(search), 3000);
 
         return () => clearTimeout(timeout);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [search]);
-
-    function submit(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault();
-
-        runSearch(search);
-    }
 
     return (
         <>
@@ -91,25 +80,17 @@ export default function SurveyExtraResults({
                                 search dan pagination.
                             </CardDescription>
                         </div>
-                        <form
-                            onSubmit={submit}
-                            className="flex w-full gap-2 md:w-sm"
-                        >
-                            <div className="relative flex-1">
-                                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    value={search}
-                                    onChange={(event) =>
-                                        setSearch(event.target.value)
-                                    }
-                                    placeholder="Cari nama atau email user"
-                                    className="pl-9"
-                                />
-                            </div>
-                            <Button type="submit" variant="secondary">
-                                Search
-                            </Button>
-                        </form>
+                        <div className="relative w-full md:w-sm">
+                            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                value={search}
+                                onChange={(event) =>
+                                    setSearch(event.target.value)
+                                }
+                                placeholder="Cari nama atau email user"
+                                className="pl-9"
+                            />
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="overflow-hidden rounded-lg border">
