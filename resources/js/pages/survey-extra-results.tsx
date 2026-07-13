@@ -1,8 +1,8 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { PaginationLinks } from '@/components/pagination-links';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -63,7 +63,6 @@ export default function SurveyExtraResults({
         const timeout = setTimeout(() => runSearch(search), 3000);
 
         return () => clearTimeout(timeout);
-         
     }, [search]);
 
     return (
@@ -137,20 +136,31 @@ export default function SurveyExtraResults({
                                                 </td>
                                                 <td className="px-4 py-4">
                                                     <Badge variant="secondary">
-                                                        {teamLabels[response.answers.q2 as string] ??
-                                                            response.answers.q2 ??
+                                                        {teamLabels[
+                                                            response.answers
+                                                                .q2 as string
+                                                        ] ??
+                                                            response.answers
+                                                                .q2 ??
                                                             '-'}
                                                     </Badge>
                                                 </td>
                                                 <td className="px-4 py-4">
                                                     <Badge variant="outline">
-                                                        {priorityLabels[response.answers.q10 as string] ??
-                                                            response.answers.q10 ??
+                                                        {priorityLabels[
+                                                            response.answers
+                                                                .q10 as string
+                                                        ] ??
+                                                            response.answers
+                                                                .q10 ??
                                                             '-'}
                                                     </Badge>
                                                 </td>
                                                 <td className="px-4 py-4 text-muted-foreground">
-                                                    {frequencyLabels[response.answers.q6 as string] ??
+                                                    {frequencyLabels[
+                                                        response.answers
+                                                            .q6 as string
+                                                    ] ??
                                                         response.answers.q6 ??
                                                         '-'}
                                                 </td>
@@ -180,35 +190,7 @@ export default function SurveyExtraResults({
                                 Menampilkan {responses.from ?? 0}-
                                 {responses.to ?? 0} dari {responses.total} data
                             </p>
-                            <div className="flex flex-wrap gap-2">
-                                {responses.links.map((link) => (
-                                    <Button
-                                        key={`${link.label}-${link.url}`}
-                                        variant={
-                                            link.active ? 'default' : 'outline'
-                                        }
-                                        size="sm"
-                                        disabled={!link.url}
-                                        asChild={Boolean(link.url)}
-                                    >
-                                        {link.url ? (
-                                            <Link
-                                                href={link.url}
-                                                preserveScroll
-                                                dangerouslySetInnerHTML={{
-                                                    __html: link.label,
-                                                }}
-                                            />
-                                        ) : (
-                                            <span
-                                                dangerouslySetInnerHTML={{
-                                                    __html: link.label,
-                                                }}
-                                            />
-                                        )}
-                                    </Button>
-                                ))}
-                            </div>
+                            <PaginationLinks links={responses.links} />
                         </div>
                     </CardContent>
                 </Card>

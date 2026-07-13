@@ -1,8 +1,8 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { PaginationLinks } from '@/components/pagination-links';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -42,7 +42,6 @@ export default function SurveyResults({
         const timeout = setTimeout(() => runSearch(search), 3000);
 
         return () => clearTimeout(timeout);
-         
     }, [search]);
 
     return (
@@ -157,35 +156,7 @@ export default function SurveyResults({
                                 Menampilkan {responses.from ?? 0}-
                                 {responses.to ?? 0} dari {responses.total} data
                             </p>
-                            <div className="flex flex-wrap gap-2">
-                                {responses.links.map((link) => (
-                                    <Button
-                                        key={`${link.label}-${link.url}`}
-                                        variant={
-                                            link.active ? 'default' : 'outline'
-                                        }
-                                        size="sm"
-                                        disabled={!link.url}
-                                        asChild={Boolean(link.url)}
-                                    >
-                                        {link.url ? (
-                                            <Link
-                                                href={link.url}
-                                                preserveScroll
-                                                dangerouslySetInnerHTML={{
-                                                    __html: link.label,
-                                                }}
-                                            />
-                                        ) : (
-                                            <span
-                                                dangerouslySetInnerHTML={{
-                                                    __html: link.label,
-                                                }}
-                                            />
-                                        )}
-                                    </Button>
-                                ))}
-                            </div>
+                            <PaginationLinks links={responses.links} />
                         </div>
                     </CardContent>
                 </Card>
