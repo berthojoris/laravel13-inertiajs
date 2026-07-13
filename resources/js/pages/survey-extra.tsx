@@ -7,7 +7,7 @@ import {
     ClipboardCheck,
     Send,
 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -299,9 +299,13 @@ function validateStepFields(
 function QuestionField({
     question,
     error,
+    checkedValues = [],
+    onCheckedChange,
 }: {
     question: SurveyExtraQuestion;
     error?: string;
+    checkedValues?: string[];
+    onCheckedChange?: (value: string, checked: boolean) => void;
 }) {
     if (question.type === 'text') {
         return (
@@ -346,22 +350,40 @@ function QuestionField({
                     {question.label}
                 </legend>
                 <div className="grid gap-2 sm:grid-cols-2">
-                    {question.options.map((option) => (
-                        <label
-                            key={option.value}
-                            className={cn(
-                                optionLabelClassName,
-                                error &&
-                                    'border-red-500 bg-red-50/50 dark:border-red-400 dark:bg-red-950/20',
-                            )}
-                        >
-                            <Checkbox
-                                name={`${question.name}[]`}
-                                value={option.value}
-                            />
-                            <span>{option.label}</span>
-                        </label>
-                    ))}
+                    {question.options.map((option) => {
+                        const isChecked = checkedValues.includes(
+                            option.value,
+                        );
+
+                        return (
+                            <label
+                                key={option.value}
+                                className={cn(
+                                    optionLabelClassName,
+                                    error &&
+                                        'border-red-500 bg-red-50/50 dark:border-red-400 dark:bg-red-950/20',
+                                )}
+                            >
+                                <Checkbox
+                                    checked={isChecked}
+                                    onCheckedChange={(checked) =>
+                                        onCheckedChange?.(
+                                            option.value,
+                                            checked === true,
+                                        )
+                                    }
+                                />
+                                {isChecked && (
+                                    <input
+                                        type="hidden"
+                                        name={`${question.name}[]`}
+                                        value={option.value}
+                                    />
+                                )}
+                                <span>{option.label}</span>
+                            </label>
+                        );
+                    })}
                 </div>
                 <InputError message={error} />
             </fieldset>
@@ -396,16 +418,60 @@ function QuestionField({
     );
 }
 
+const checkboxQuestionNames = steps
+    .flatMap((step) => step.questions)
+    .filter((q): q is CheckboxQuestion => q.type === 'checkbox')
+    .map((q) => q.name);
+
 export default function SurveyExtra() {
     const formRef = useRef<FormComponentRef<SurveyExtraFormValues>>(null);
     const [currentStep, setCurrentStep] = useState(0);
     const [clientErrors, setClientErrors] = useState<SurveyExtraFormErrors>({});
+    const [checkboxState, setCheckboxState] = useState<
+        Record<string, string[]>
+    >(
+        Object.fromEntries(checkboxQuestionNames.map((name) => [name, []])),
+    );
     const activeStep = steps[currentStep];
     const isFirstStep = currentStep === 0;
     const isLastStep = currentStep === steps.length - 1;
 
+    const handleCheckboxChange = useCallback(
+        (groupName: string, optionValue: string, checked: boolean) => {
+            setCheckboxState((prev) => {
+                const current = prev[groupName] ?? [];
+
+                if (checked) {
+                    return {
+                        ...prev,
+                        [groupName]: [...current, optionValue],
+                    };
+                }
+
+                return {
+                    ...prev,
+                    [groupName]: current.filter((v) => v !== optionValue),
+                };
+            });
+        },
+        [],
+    );
+
+    function getMergedData(): SurveyExtraFormValues {
+        const formData = formRef.current?.getData() ?? {};
+        const merged: SurveyExtraFormValues = { ...formData };
+
+        for (const [name, values] of Object.entries(checkboxState)) {
+            if (values.length > 0) {
+                merged[name] = values;
+            }
+        }
+
+        return merged;
+    }
+
     function validateAndSetErrors(): SurveyExtraFormErrors {
-        const data = formRef.current?.getData() ?? {};
+        const data = getMergedData();
         const nextErrors = validateRequiredFields(data);
 
         setClientErrors(nextErrors);
@@ -415,7 +481,7 @@ export default function SurveyExtra() {
     }
 
     function handleNext(): void {
-        const data = formRef.current?.getData() ?? {};
+        const data = getMergedData();
         const nextErrors = validateStepFields(currentStep, data);
 
         setClientErrors(nextErrors);
@@ -515,6 +581,14 @@ export default function SurveyExtra() {
                             onSuccess={() => {
                                 setCurrentStep(0);
                                 setClientErrors({});
+                                setCheckboxState(
+                                    Object.fromEntries(
+                                        checkboxQuestionNames.map((name) => [
+                                            name,
+                                            [],
+                                        ]),
+                                    ),
+                                );
                             }}
                             onBefore={() => {
                                 const nextErrors = validateAndSetErrors();
@@ -574,6 +648,29 @@ export default function SurveyExtra() {
                                                                 validationErrors,
                                                                 question.name,
                                                             )}
+                                                            checkedValues={
+                                                                question.type ===
+                                                                'checkbox'
+                                                                    ? checkboxState[
+                                                                          question
+                                                                              .name
+                                                                      ] ?? []
+                                                                    : []
+                                                            }
+                                                            onCheckedChange={
+                                                                question.type ===
+                                                                'checkbox'
+                                                                    ? (
+                                                                          value,
+                                                                          checked,
+                                                                      ) =>
+                                                                          handleCheckboxChange(
+                                                                              question.name,
+                                                                              value,
+                                                                              checked,
+                                                                          )
+                                                                    : undefined
+                                                            }
                                                         />
                                                     ),
                                                 )}
