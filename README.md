@@ -83,6 +83,14 @@ npm run dev
 php artisan serve
 ```
 
+> **Wayfinder route helpers** are generated (and git-ignored). `npm run dev` / `npm run build`
+> generate them automatically via the Vite plugin. If you run `npm run types:check` on a fresh
+> checkout before building, generate them first with:
+>
+> ```bash
+> php artisan wayfinder:generate --with-form
+> ```
+
 ## Code Quality
 
 ```bash
