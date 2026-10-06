@@ -30,7 +30,7 @@ class SurveyResultController extends Controller
             ->through(fn (SurveyResponse $response) => (new SurveyResponseResource($response))->resolve());
 
         return Inertia::render('survey-results', [
-            'responses' => Inertia::merge($responses),
+            'responses' => Inertia::scroll($responses),
             'filters' => ['search' => $search],
         ]);
     }
