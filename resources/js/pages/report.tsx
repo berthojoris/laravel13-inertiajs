@@ -90,7 +90,9 @@ export default function Report() {
 
         try {
             const response = await fetch(exportUrl, {
-                headers: { Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+                headers: {
+                    Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                },
             });
 
             if (!response.ok) {

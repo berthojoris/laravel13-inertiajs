@@ -1,10 +1,39 @@
 import { Head } from '@inertiajs/react';
-import { Activity, ArrowUpRight, BarChart3, CalendarDays, Download, ListChecks, PieChart as PieChartIcon, Sparkles, TrendingUp } from 'lucide-react';
-import { ActivityHeatmap, BarChart, LineChart, PieChart, ScoreList, ScoreRadar } from '@/components/analytics-chart';
+import {
+    Activity,
+    ArrowUpRight,
+    BarChart3,
+    CalendarDays,
+    Download,
+    ListChecks,
+    PieChart as PieChartIcon,
+    Sparkles,
+    TrendingUp,
+} from 'lucide-react';
+import {
+    ActivityHeatmap,
+    BarChart,
+    LineChart,
+    PieChart,
+    ScoreList,
+    ScoreRadar,
+} from '@/components/analytics-chart';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { dashboard } from '@/routes';
-import type { ChartItem, HeatmapCell, Metric, PieItem, ScoreListEntry } from '@/types';
+import type {
+    ChartItem,
+    HeatmapCell,
+    Metric,
+    PieItem,
+    ScoreListEntry,
+} from '@/types';
 
 const metricIcons = [Activity, PieChartIcon, BarChart3, Download];
 const metricAccents = [
@@ -33,7 +62,12 @@ export default function Dashboard({
     dailyActivity: HeatmapCell[];
     completionRate: number;
 }) {
-    const insightStatus = completionRate >= 70 ? 'Healthy' : completionRate >= 40 ? 'Fair' : 'Low';
+    const insightStatus =
+        completionRate >= 70
+            ? 'Healthy'
+            : completionRate >= 40
+              ? 'Fair'
+              : 'Low';
     const insightTone =
         completionRate >= 70
             ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
@@ -51,7 +85,10 @@ export default function Dashboard({
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
                     <div className="relative grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
                         <div className="max-w-3xl space-y-4">
-                            <Badge variant="secondary" className="gap-2 bg-secondary text-secondary-foreground">
+                            <Badge
+                                variant="secondary"
+                                className="gap-2 bg-secondary text-secondary-foreground"
+                            >
                                 <Sparkles className="size-3.5 text-primary" />
                                 Analytics overview
                             </Badge>
@@ -60,21 +97,32 @@ export default function Dashboard({
                                     Survey intelligence dashboard
                                 </h1>
                                 <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-                                    Pantau tren kepuasan, performa channel, dan kualitas feedback dengan visualisasi yang lebih modern dan mudah dibaca.
+                                    Pantau tren kepuasan, performa channel, dan
+                                    kualitas feedback dengan visualisasi yang
+                                    lebih modern dan mudah dibaca.
                                 </p>
                             </div>
                         </div>
                         <div className="grid gap-3 rounded-2xl border bg-secondary/45 p-4 backdrop-blur">
                             <div className="flex items-center justify-between gap-3">
-                                <span className="text-sm text-muted-foreground">Insight status</span>
-                                <Badge variant="secondary" className={insightTone}>
+                                <span className="text-sm text-muted-foreground">
+                                    Insight status
+                                </span>
+                                <Badge
+                                    variant="secondary"
+                                    className={insightTone}
+                                >
                                     {insightStatus}
                                 </Badge>
                             </div>
                             <div className="flex items-end justify-between gap-4">
                                 <div>
-                                    <p className="text-3xl font-semibold tracking-tight">{completionRate}%</p>
-                                    <p className="text-sm text-muted-foreground">completion rate</p>
+                                    <p className="text-3xl font-semibold tracking-tight">
+                                        {completionRate}%
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                        completion rate
+                                    </p>
                                 </div>
                                 <div className="rounded-full bg-background p-3 text-foreground shadow-sm">
                                     <TrendingUp className="size-6" />
@@ -89,13 +137,22 @@ export default function Dashboard({
                         const Icon = metricIcons[index] ?? Activity;
 
                         return (
-                            <Card key={metric.label} className="overflow-hidden border-muted/80 bg-card/80 shadow-sm">
+                            <Card
+                                key={metric.label}
+                                className="overflow-hidden border-muted/80 bg-card/80 shadow-sm"
+                            >
                                 <CardHeader className="flex-row items-start justify-between space-y-0 pb-3">
                                     <div className="space-y-1">
-                                        <CardDescription>{metric.label}</CardDescription>
-                                        <CardTitle className="text-3xl tracking-tight">{metric.value}</CardTitle>
+                                        <CardDescription>
+                                            {metric.label}
+                                        </CardDescription>
+                                        <CardTitle className="text-3xl tracking-tight">
+                                            {metric.value}
+                                        </CardTitle>
                                     </div>
-                                    <div className={`rounded-2xl bg-gradient-to-br p-3 ${metricAccents[index] ?? metricAccents[0]}`}>
+                                    <div
+                                        className={`rounded-2xl bg-gradient-to-br p-3 ${metricAccents[index] ?? metricAccents[0]}`}
+                                    >
                                         <Icon className="size-5" />
                                     </div>
                                 </CardHeader>
@@ -115,8 +172,13 @@ export default function Dashboard({
                         <CardHeader>
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                                 <div>
-                                    <CardTitle>Monthly response trend</CardTitle>
-                                    <CardDescription>Area line chart dengan kurva halus untuk memantau volume respons.</CardDescription>
+                                    <CardTitle>
+                                        Monthly response trend
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Area line chart dengan kurva halus untuk
+                                        memantau volume respons.
+                                    </CardDescription>
                                 </div>
                                 <Badge variant="secondary">8 periods</Badge>
                             </div>
@@ -129,7 +191,10 @@ export default function Dashboard({
                     <Card className="border-muted/80 shadow-sm">
                         <CardHeader>
                             <CardTitle>Satisfaction split</CardTitle>
-                            <CardDescription>Donut chart dengan legenda dan progress per segmen.</CardDescription>
+                            <CardDescription>
+                                Donut chart dengan legenda dan progress per
+                                segmen.
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <PieChart data={satisfactionSplit} />
@@ -141,7 +206,10 @@ export default function Dashboard({
                     <Card className="border-muted/80 shadow-sm">
                         <CardHeader>
                             <CardTitle>Channel performance</CardTitle>
-                            <CardDescription>Vertical bar chart untuk membandingkan sumber input survey.</CardDescription>
+                            <CardDescription>
+                                Vertical bar chart untuk membandingkan sumber
+                                input survey.
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <BarChart data={channelData} />
@@ -151,7 +219,10 @@ export default function Dashboard({
                     <Card className="border-muted/80 shadow-sm">
                         <CardHeader>
                             <CardTitle>Department score radar</CardTitle>
-                            <CardDescription>Radar chart untuk melihat sebaran skor kepuasan tiap departemen.</CardDescription>
+                            <CardDescription>
+                                Radar chart untuk melihat sebaran skor kepuasan
+                                tiap departemen.
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ScoreRadar data={departmentScores} />
@@ -168,7 +239,10 @@ export default function Dashboard({
                                         <ListChecks className="size-4 text-muted-foreground" />
                                         Avg score by department
                                     </CardTitle>
-                                    <CardDescription>Skor rata-rata kepuasan per departemen, diurutkan dari tertinggi.</CardDescription>
+                                    <CardDescription>
+                                        Skor rata-rata kepuasan per departemen,
+                                        diurutkan dari tertinggi.
+                                    </CardDescription>
                                 </div>
                                 <Badge variant="secondary">/ 5.0</Badge>
                             </div>
@@ -186,7 +260,10 @@ export default function Dashboard({
                                         <CalendarDays className="size-4 text-muted-foreground" />
                                         Daily activity
                                     </CardTitle>
-                                    <CardDescription>Heatmap respon per hari dalam 14 hari terakhir.</CardDescription>
+                                    <CardDescription>
+                                        Heatmap respon per hari dalam 14 hari
+                                        terakhir.
+                                    </CardDescription>
                                 </div>
                                 <Badge variant="secondary">14 days</Badge>
                             </div>

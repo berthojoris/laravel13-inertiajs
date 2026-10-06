@@ -1,4 +1,10 @@
-export const DEPARTMENTS = ['Operations', 'Sales', 'Marketing', 'Product', 'Support'] as const;
+export const DEPARTMENTS = [
+    'Operations',
+    'Sales',
+    'Marketing',
+    'Product',
+    'Support',
+] as const;
 
 export const CHANNELS = ['Website', 'Email', 'WhatsApp', 'Walk-in'] as const;
 
@@ -15,9 +21,7 @@ export type SurveyFormValues = {
     feedback?: string | null;
 };
 
-export type SurveyFormErrors = Partial<
-    Record<keyof SurveyFormValues, string>
->;
+export type SurveyFormErrors = Partial<Record<keyof SurveyFormValues, string>>;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -29,9 +33,7 @@ function isChannel(value: string): value is SurveyChannel {
     return (CHANNELS as readonly string[]).includes(value);
 }
 
-export function validateSurveyForm(
-    data: SurveyFormValues,
-): SurveyFormErrors {
+export function validateSurveyForm(data: SurveyFormValues): SurveyFormErrors {
     const errors: SurveyFormErrors = {};
 
     const respondentName = data.respondent_name?.trim() ?? '';
@@ -72,11 +74,7 @@ export function validateSurveyForm(
         String(scoreRaw).trim() === ''
     ) {
         errors.satisfaction_score = 'Skor kepuasan wajib diisi.';
-    } else if (
-        !Number.isInteger(score) ||
-        score < 1 ||
-        score > 5
-    ) {
+    } else if (!Number.isInteger(score) || score < 1 || score > 5) {
         errors.satisfaction_score = 'Skor kepuasan harus bilangan 1 sampai 5.';
     }
 

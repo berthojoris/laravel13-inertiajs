@@ -287,13 +287,16 @@ function validateStepFields(
     stepIndex: number,
     data: SurveyExtraFormValues,
 ): SurveyExtraFormErrors {
-    return steps[stepIndex].questions.reduce<SurveyExtraFormErrors>((errors, question) => {
-        if (isBlankValue(data[question.name])) {
-            errors[question.name] = `${question.label} wajib diisi.`;
-        }
+    return steps[stepIndex].questions.reduce<SurveyExtraFormErrors>(
+        (errors, question) => {
+            if (isBlankValue(data[question.name])) {
+                errors[question.name] = `${question.label} wajib diisi.`;
+            }
 
-        return errors;
-    }, {});
+            return errors;
+        },
+        {},
+    );
 }
 
 function QuestionField({
@@ -351,9 +354,7 @@ function QuestionField({
                 </legend>
                 <div className="grid gap-2 sm:grid-cols-2">
                     {question.options.map((option) => {
-                        const isChecked = checkedValues.includes(
-                            option.value,
-                        );
+                        const isChecked = checkedValues.includes(option.value);
 
                         return (
                             <label
@@ -429,9 +430,7 @@ export default function SurveyExtra() {
     const [clientErrors, setClientErrors] = useState<SurveyExtraFormErrors>({});
     const [checkboxState, setCheckboxState] = useState<
         Record<string, string[]>
-    >(
-        Object.fromEntries(checkboxQuestionNames.map((name) => [name, []])),
-    );
+    >(Object.fromEntries(checkboxQuestionNames.map((name) => [name, []])));
     const activeStep = steps[currentStep];
     const isFirstStep = currentStep === 0;
     const isLastStep = currentStep === steps.length - 1;
@@ -651,10 +650,10 @@ export default function SurveyExtra() {
                                                             checkedValues={
                                                                 question.type ===
                                                                 'checkbox'
-                                                                    ? checkboxState[
+                                                                    ? (checkboxState[
                                                                           question
                                                                               .name
-                                                                      ] ?? []
+                                                                      ] ?? [])
                                                                     : []
                                                             }
                                                             onCheckedChange={

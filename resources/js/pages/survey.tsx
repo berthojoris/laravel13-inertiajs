@@ -32,13 +32,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import {
-    CHANNELS,
-    DEPARTMENTS,
-    validateSurveyForm
-    
-} from '@/lib/survey';
-import type {SurveyFormValues} from '@/lib/survey';
+import { CHANNELS, DEPARTMENTS, validateSurveyForm } from '@/lib/survey';
+import type { SurveyFormValues } from '@/lib/survey';
 import { create, store } from '@/routes/survey';
 
 const scoreGuides = [
@@ -157,11 +152,7 @@ export default function Survey() {
                                     return true;
                                 }}
                             >
-                                {({
-                                    processing,
-                                    errors,
-                                    clearErrors,
-                                }) => (
+                                {({ processing, errors, clearErrors }) => (
                                     <>
                                         <div className="grid gap-2">
                                             <Label htmlFor="respondent_name">
