@@ -17,6 +17,9 @@ class DashboardController extends Controller
     {
         $this->authorize('viewAny', SurveyResponse::class);
 
-        return Inertia::render('dashboard', $this->metrics->build());
+        return Inertia::render('dashboard', [
+            ...$this->metrics->headline(),
+            'analytics' => Inertia::defer(fn (): array => $this->metrics->analytics()),
+        ]);
     }
 }

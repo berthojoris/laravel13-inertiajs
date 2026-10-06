@@ -17,6 +17,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('survey-extra', [SurveyExtraController::class, 'create'])->name('survey-extra.create');
     Route::post('survey-extra', [SurveyExtraController::class, 'store'])->name('survey-extra.store');
     Route::get('survey-results', SurveyResultController::class)->name('survey-results.index');
+    Route::put('survey-results/{response}/archive', [SurveyResultController::class, 'archive'])->name('survey-results.archive');
     Route::get('survey-extra-results', SurveyExtraResultController::class)->name('survey-extra-results.index');
     Route::get('report', [ReportController::class, 'index'])->name('report.index');
     Route::get('report/export', [ReportController::class, 'export'])->name('report.export');

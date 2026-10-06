@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Department;
 use App\Enums\SurveyChannel;
+use Carbon\CarbonImmutable;
 use Database\Factories\SurveyResponseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,10 +21,11 @@ use Illuminate\Support\Carbon;
  * @property int $satisfaction_score
  * @property SurveyChannel $channel
  * @property string|null $feedback
+ * @property CarbonImmutable|null $archived_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['user_id', 'respondent_name', 'email', 'department', 'satisfaction_score', 'channel', 'feedback'])]
+#[Fillable(['user_id', 'respondent_name', 'email', 'department', 'satisfaction_score', 'channel', 'feedback', 'archived_at'])]
 class SurveyResponse extends Model
 {
     /** @use HasFactory<SurveyResponseFactory> */
@@ -37,6 +39,11 @@ class SurveyResponse extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
+
     /**
      * @return array<string, string>
      */
@@ -46,6 +53,7 @@ class SurveyResponse extends Model
             'department' => Department::class,
             'satisfaction_score' => 'integer',
             'channel' => SurveyChannel::class,
+            'archived_at' => 'datetime',
         ];
     }
 }

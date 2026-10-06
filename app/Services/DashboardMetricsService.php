@@ -32,9 +32,11 @@ class DashboardMetricsService
     ) {}
 
     /**
+     * Cheap headline numbers suitable for polling.
+     *
      * @return array<string, mixed>
      */
-    public function build(): array
+    public function headline(): array
     {
         $totalResponses = $this->repository->count();
         $averageSatisfaction = $this->repository->averageSatisfaction();
@@ -43,8 +45,6 @@ class DashboardMetricsService
         $completionRate = $totalResponses > 0
             ? (int) round(($withFeedback / $totalResponses) * 100)
             : 0;
-
-        $departmentScores = $this->departmentScores();
 
         return [
             'metrics' => [
@@ -69,13 +69,26 @@ class DashboardMetricsService
                     'trend' => $activeChannels.' / '.count(SurveyChannel::cases()),
                 ],
             ],
+            'completionRate' => $completionRate,
+        ];
+    }
+
+    /**
+     * Heavy chart aggregates, loaded lazily via deferred props.
+     *
+     * @return array<string, mixed>
+     */
+    public function analytics(): array
+    {
+        $departmentScores = $this->departmentScores();
+
+        return [
             'monthlyResponses' => $this->repository->monthlyCounts(self::MONTHLY_PERIODS),
             'satisfactionSplit' => $this->satisfactionSplit(),
             'channelData' => $this->channelData(),
             'departmentScores' => $departmentScores,
             'departmentAverages' => $departmentScores,
             'dailyActivity' => $this->repository->dailyCounts(self::HEATMAP_DAYS),
-            'completionRate' => $completionRate,
         ];
     }
 

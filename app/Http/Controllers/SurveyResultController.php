@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Survey\ToggleSurveyResponseArchiveAction;
+use App\Http\Requests\ArchiveSurveyResponseRequest;
 use App\Http\Resources\SurveyResponseResource;
 use App\Models\SurveyResponse;
 use App\Repositories\SurveyResponseRepository;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,8 +30,27 @@ class SurveyResultController extends Controller
             ->through(fn (SurveyResponse $response) => (new SurveyResponseResource($response))->resolve());
 
         return Inertia::render('survey-results', [
-            'responses' => $responses,
+            'responses' => Inertia::merge($responses),
             'filters' => ['search' => $search],
         ]);
+    }
+
+    public function archive(
+        SurveyResponse $response,
+        ArchiveSurveyResponseRequest $request,
+        ToggleSurveyResponseArchiveAction $action,
+    ): RedirectResponse {
+        $this->authorize('update', $response);
+
+        $action->execute($response, $request->boolean('archived'));
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $request->boolean('archived')
+                ? __('Response archived.')
+                : __('Response restored.'),
+        ]);
+
+        return to_route('survey-results.index');
     }
 }

@@ -18,6 +18,14 @@ class SurveyResponseRepository
         return SurveyResponse::create($data->toArray());
     }
 
+    public function setArchived(SurveyResponse $response, bool $archived): SurveyResponse
+    {
+        $response->archived_at = $archived ? now() : null;
+        $response->save();
+
+        return $response;
+    }
+
     /**
      * @return LengthAwarePaginator<int, SurveyResponse>
      */

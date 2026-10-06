@@ -24,6 +24,7 @@ class SurveyResponseResource extends JsonResource
             'satisfaction_score' => $this->satisfaction_score,
             'channel' => $this->channel->value,
             'feedback' => $this->feedback,
+            'archived' => $this->archived_at !== null,
             'created_at' => $this->created_at?->format('d M Y'),
         ];
     }

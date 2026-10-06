@@ -3,6 +3,7 @@
 use App\Models\SurveyResponse;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Inertia;
 use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
@@ -20,15 +21,42 @@ test('authenticated users can visit the dashboard', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('dashboard')
             ->has('metrics', 4)
-            ->has('monthlyResponses', 8)
-            ->has('satisfactionSplit')
-            ->has('channelData')
-            ->has('departmentScores')
-            ->has('departmentAverages')
-            ->has('dailyActivity', 14)
             ->where('completionRate', 0)
             ->where('metrics.0.value', 0)
         );
+});
+
+test('dashboard analytics are deferred and resolvable via partial reload', function () {
+    $user = User::factory()->create();
+
+    SurveyResponse::factory()->create([
+        'user_id' => $user->id,
+        'satisfaction_score' => 5,
+        'channel' => 'Website',
+        'department' => 'Product',
+        'created_at' => now(),
+    ]);
+
+    // Initial load: heavy chart props stay deferred (absent from payload).
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('dashboard')
+            ->missing('analytics')
+        );
+
+    // Partial reload resolves the deferred prop.
+    $this->followingRedirects()
+        ->get(route('dashboard'), [
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => Inertia::getVersion(),
+            'X-Inertia-Partial-Component' => 'dashboard',
+            'X-Inertia-Partial-Data' => 'analytics',
+        ])
+        ->assertOk()
+        ->assertJsonPath('props.analytics.monthlyResponses.7', 1)
+        ->assertJsonPath('props.analytics.dailyActivity.13.count', 1);
 });
 
 test('dashboard reflects live survey aggregates', function () {

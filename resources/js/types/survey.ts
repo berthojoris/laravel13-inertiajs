@@ -6,7 +6,17 @@ export type SurveyResponse = {
     satisfaction_score: number;
     channel: string;
     feedback: string | null;
+    archived: boolean;
     created_at: string | null;
+};
+
+export type DashboardAnalytics = {
+    monthlyResponses: number[];
+    satisfactionSplit: PieItem[];
+    channelData: ChartItem[];
+    departmentScores: ChartItem[];
+    departmentAverages: ScoreListEntry[];
+    dailyActivity: HeatmapCell[];
 };
 
 export type SurveyExtraResponse = {
