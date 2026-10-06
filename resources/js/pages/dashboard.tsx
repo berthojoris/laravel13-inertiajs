@@ -174,120 +174,122 @@ export default function Dashboard({
                 </section>
 
                 <Deferred data="analytics" fallback={<AnalyticsSkeleton />}>
-                    <section className="grid gap-4 xl:grid-cols-[1.45fr_0.85fr]">
-                        <Card className="border-muted/80 shadow-sm">
-                            <CardHeader>
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                    <div>
-                                        <CardTitle>
-                                            Monthly response trend
-                                        </CardTitle>
-                                        <CardDescription>
-                                            Area line chart dengan kurva halus
-                                            untuk memantau volume respons.
-                                        </CardDescription>
-                                    </div>
-                                    <Badge variant="secondary">8 periods</Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <LineChart data={analytics.monthlyResponses} />
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border-muted/80 shadow-sm">
-                            <CardHeader>
-                                <CardTitle>Satisfaction split</CardTitle>
-                                <CardDescription>
-                                    Donut chart dengan legenda dan progress per
-                                    segmen.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <PieChart data={analytics.satisfactionSplit} />
-                            </CardContent>
-                        </Card>
-                    </section>
-
-                    <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-                        <Card className="border-muted/80 shadow-sm">
-                            <CardHeader>
-                                <CardTitle>Channel performance</CardTitle>
-                                <CardDescription>
-                                    Vertical bar chart untuk membandingkan
-                                    sumber input survey.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <BarChart data={analytics.channelData} />
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border-muted/80 shadow-sm">
-                            <CardHeader>
-                                <CardTitle>Department score radar</CardTitle>
-                                <CardDescription>
-                                    Radar chart untuk melihat sebaran skor
-                                    kepuasan tiap departemen.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <ScoreRadar data={analytics.departmentScores} />
-                            </CardContent>
-                        </Card>
-                    </section>
-
-                    <section className="grid gap-4 xl:grid-cols-2">
-                        <Card className="border-muted/80 shadow-sm">
-                            <CardHeader>
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                    <div>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <ListChecks className="size-4 text-muted-foreground" />
-                                            Avg score by department
-                                        </CardTitle>
-                                        <CardDescription>
-                                            Skor rata-rata kepuasan per
-                                            departemen, diurutkan dari
-                                            tertinggi.
-                                        </CardDescription>
-                                    </div>
-                                    <Badge variant="secondary">/ 5.0</Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <ScoreList
-                                    data={analytics.departmentAverages}
-                                    max={5}
-                                />
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border-muted/80 shadow-sm">
-                            <CardHeader>
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                    <div>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <CalendarDays className="size-4 text-muted-foreground" />
-                                            Daily activity
-                                        </CardTitle>
-                                        <CardDescription>
-                                            Heatmap respon per hari dalam 14
-                                            hari terakhir.
-                                        </CardDescription>
-                                    </div>
-                                    <Badge variant="secondary">14 days</Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <ActivityHeatmap
-                                    data={analytics.dailyActivity}
-                                />
-                            </CardContent>
-                        </Card>
-                    </section>
+                    <Analytics analytics={analytics} />
                 </Deferred>
             </div>
+        </>
+    );
+}
+
+function Analytics({ analytics }: { analytics: DashboardAnalytics }) {
+    return (
+        <>
+            <section className="grid gap-4 xl:grid-cols-[1.45fr_0.85fr]">
+                <Card className="border-muted/80 shadow-sm">
+                    <CardHeader>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <CardTitle>Monthly response trend</CardTitle>
+                                <CardDescription>
+                                    Area line chart dengan kurva halus untuk
+                                    memantau volume respons.
+                                </CardDescription>
+                            </div>
+                            <Badge variant="secondary">8 periods</Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <LineChart data={analytics.monthlyResponses} />
+                    </CardContent>
+                </Card>
+
+                <Card className="border-muted/80 shadow-sm">
+                    <CardHeader>
+                        <CardTitle>Satisfaction split</CardTitle>
+                        <CardDescription>
+                            Donut chart dengan legenda dan progress per segmen.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <PieChart data={analytics.satisfactionSplit} />
+                    </CardContent>
+                </Card>
+            </section>
+
+            <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+                <Card className="border-muted/80 shadow-sm">
+                    <CardHeader>
+                        <CardTitle>Channel performance</CardTitle>
+                        <CardDescription>
+                            Vertical bar chart untuk membandingkan sumber input
+                            survey.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <BarChart data={analytics.channelData} />
+                    </CardContent>
+                </Card>
+
+                <Card className="border-muted/80 shadow-sm">
+                    <CardHeader>
+                        <CardTitle>Department score radar</CardTitle>
+                        <CardDescription>
+                            Radar chart untuk melihat sebaran skor kepuasan tiap
+                            departemen.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ScoreRadar data={analytics.departmentScores} />
+                    </CardContent>
+                </Card>
+            </section>
+
+            <section className="grid gap-4 xl:grid-cols-2">
+                <Card className="border-muted/80 shadow-sm">
+                    <CardHeader>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <CardTitle className="flex items-center gap-2">
+                                    <ListChecks className="size-4 text-muted-foreground" />
+                                    Avg score by department
+                                </CardTitle>
+                                <CardDescription>
+                                    Skor rata-rata kepuasan per departemen,
+                                    diurutkan dari tertinggi.
+                                </CardDescription>
+                            </div>
+                            <Badge variant="secondary">/ 5.0</Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <ScoreList
+                            data={analytics.departmentAverages}
+                            max={5}
+                        />
+                    </CardContent>
+                </Card>
+
+                <Card className="border-muted/80 shadow-sm">
+                    <CardHeader>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <CardTitle className="flex items-center gap-2">
+                                    <CalendarDays className="size-4 text-muted-foreground" />
+                                    Daily activity
+                                </CardTitle>
+                                <CardDescription>
+                                    Heatmap respon per hari dalam 14 hari
+                                    terakhir.
+                                </CardDescription>
+                            </div>
+                            <Badge variant="secondary">14 days</Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <ActivityHeatmap data={analytics.dailyActivity} />
+                    </CardContent>
+                </Card>
+            </section>
         </>
     );
 }
