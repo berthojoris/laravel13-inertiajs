@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\DTO\PasswordUpdateData;
 use App\DTO\ProfileUpdateData;
 use App\Models\User;
+use Laravel\Passkeys\Passkey;
 
 class UserRepository
 {
@@ -43,18 +44,22 @@ class UserRepository
      */
     public function listPasskeysForSecurity(User $user): array
     {
-        return $user->passkeys()
+        $passkeys = [];
+
+        $user->passkeys()
             ->select(['id', 'name', 'credential', 'created_at', 'last_used_at'])
             ->latest()
             ->get()
-            ->map(fn ($passkey): array => [
-                'id' => $passkey->id,
-                'name' => $passkey->name,
-                'authenticator' => $passkey->authenticator,
-                'created_at_diff' => $passkey->created_at->diffForHumans(),
-                'last_used_at_diff' => $passkey->last_used_at?->diffForHumans(),
-            ])
-            ->values()
-            ->all();
+            ->each(function (Passkey $passkey) use (&$passkeys): void {
+                $passkeys[] = [
+                    'id' => $passkey->id,
+                    'name' => $passkey->name,
+                    'authenticator' => $passkey->authenticator,
+                    'created_at_diff' => $passkey->created_at?->diffForHumans() ?? '',
+                    'last_used_at_diff' => $passkey->last_used_at?->diffForHumans(),
+                ];
+            });
+
+        return $passkeys;
     }
 }

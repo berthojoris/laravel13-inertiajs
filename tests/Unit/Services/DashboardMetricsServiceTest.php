@@ -32,25 +32,10 @@ function stubEmptyDashboardRepository($repository): void
     $repository->shouldReceive('averageSatisfaction')->andReturnNull();
     $repository->shouldReceive('countWithFeedback')->andReturn(0);
     $repository->shouldReceive('distinctChannelCount')->andReturn(0);
-    $repository->shouldReceive('averageScoreByDepartment')->andReturn([
-        ['label' => 'Operations', 'value' => 0.0],
-        ['label' => 'Sales', 'value' => 0.0],
-        ['label' => 'Marketing', 'value' => 0.0],
-        ['label' => 'Product', 'value' => 0.0],
-        ['label' => 'Support', 'value' => 0.0],
-    ]);
+    $repository->shouldReceive('averageScoreByDepartment')->andReturn([]);
     $repository->shouldReceive('monthlyCounts')->with(8)->andReturn(array_fill(0, 8, 0));
-    $repository->shouldReceive('satisfactionSplit')->andReturn([
-        ['label' => 'Very satisfied', 'value' => 0, 'color' => '#2563eb'],
-        ['label' => 'Satisfied', 'value' => 0, 'color' => '#14b8a6'],
-        ['label' => 'Neutral', 'value' => 0, 'color' => '#f59e0b'],
-        ['label' => 'Unsatisfied', 'value' => 0, 'color' => '#ef4444'],
-    ]);
-    $repository->shouldReceive('countByChannel')->andReturn(
-        collect(SurveyChannel::cases())
-            ->map(fn (SurveyChannel $channel): array => ['label' => $channel->value, 'value' => 0])
-            ->all()
-    );
+    $repository->shouldReceive('countsBySatisfactionScore')->andReturn([]);
+    $repository->shouldReceive('countByChannel')->andReturn([]);
     $repository->shouldReceive('dailyCounts')->with(14)->andReturn(emptyDailyActivity());
     $repository->shouldReceive('countCreatedBetween')->andReturn(0);
     $repository->shouldReceive('averageSatisfactionBetween')->andReturnNull();
@@ -78,6 +63,10 @@ test('build returns zeroed live metrics when repository has no data', function (
     expect($result['monthlyResponses'])->toBe(array_fill(0, 8, 0));
     expect($result['completionRate'])->toBe(0);
     expect($result['dailyActivity'])->toHaveCount(14);
+    expect($result['satisfactionSplit'])->toHaveCount(4);
+    expect(collect($result['satisfactionSplit'])->pluck('value')->all())->toBe([0, 0, 0, 0]);
+    expect($result['channelData'])->toHaveCount(count(SurveyChannel::cases()));
+    expect($result['departmentScores'])->toHaveCount(5);
 });
 
 test('build formats average satisfaction and completion from repository', function () {
@@ -85,19 +74,16 @@ test('build formats average satisfaction and completion from repository', functi
     $this->repository->shouldReceive('averageSatisfaction')->andReturn(4.583);
     $this->repository->shouldReceive('countWithFeedback')->andReturn(200);
     $this->repository->shouldReceive('distinctChannelCount')->andReturn(3);
-    $this->repository->shouldReceive('averageScoreByDepartment')->andReturn([
-        ['label' => 'Support', 'value' => 4.5],
-    ]);
+    $this->repository->shouldReceive('averageScoreByDepartment')->andReturn(['Support' => 4.5]);
     $this->repository->shouldReceive('monthlyCounts')->with(8)->andReturn([1, 2, 3, 4, 5, 6, 7, 8]);
-    $this->repository->shouldReceive('satisfactionSplit')->andReturn([
-        ['label' => 'Very satisfied', 'value' => 100, 'color' => '#2563eb'],
-        ['label' => 'Satisfied', 'value' => 80, 'color' => '#14b8a6'],
-        ['label' => 'Neutral', 'value' => 40, 'color' => '#f59e0b'],
-        ['label' => 'Unsatisfied', 'value' => 30, 'color' => '#ef4444'],
+    $this->repository->shouldReceive('countsBySatisfactionScore')->andReturn([
+        5 => 100,
+        4 => 80,
+        3 => 40,
+        2 => 20,
+        1 => 10,
     ]);
-    $this->repository->shouldReceive('countByChannel')->andReturn([
-        ['label' => 'Website', 'value' => 120],
-    ]);
+    $this->repository->shouldReceive('countByChannel')->andReturn(['Website' => 120]);
     $this->repository->shouldReceive('dailyCounts')->with(14)->andReturn([
         ['date' => '2026-07-07', 'count' => 5],
     ]);
@@ -111,7 +97,10 @@ test('build formats average satisfaction and completion from repository', functi
     expect($result['metrics'][2]['value'])->toBe('80%');
     expect($result['metrics'][3]['value'])->toBe(3);
     expect($result['completionRate'])->toBe(80);
-    expect($result['departmentAverages'])->toBe([['label' => 'Support', 'value' => 4.5]]);
+    expect($result['departmentAverages'][0])->toBe(['label' => 'Support', 'value' => 4.5]);
+    expect($result['departmentScores'])->toBe($result['departmentAverages']);
+    expect(collect($result['satisfactionSplit'])->pluck('value')->all())->toBe([100, 80, 40, 30]);
+    expect($result['channelData'][0])->toBe(['label' => 'Website', 'value' => 120]);
     expect($result['dailyActivity'])->toBe([['date' => '2026-07-07', 'count' => 5]]);
     expect($result['monthlyResponses'])->toBe([1, 2, 3, 4, 5, 6, 7, 8]);
 });
@@ -121,19 +110,15 @@ test('build uses repository aggregates without demo fallbacks', function () {
     $this->repository->shouldReceive('averageSatisfaction')->andReturn(4.0);
     $this->repository->shouldReceive('countWithFeedback')->andReturn(50);
     $this->repository->shouldReceive('distinctChannelCount')->andReturn(2);
-    $this->repository->shouldReceive('averageScoreByDepartment')->andReturn([
-        ['label' => 'Support', 'value' => 4.5],
-    ]);
+    $this->repository->shouldReceive('averageScoreByDepartment')->andReturn(['Support' => 4.5]);
     $this->repository->shouldReceive('monthlyCounts')->with(8)->andReturn(array_fill(0, 8, 2));
-    $this->repository->shouldReceive('satisfactionSplit')->andReturn([
-        ['label' => 'Very satisfied', 'value' => 25, 'color' => '#2563eb'],
-        ['label' => 'Satisfied', 'value' => 25, 'color' => '#14b8a6'],
-        ['label' => 'Neutral', 'value' => 25, 'color' => '#f59e0b'],
-        ['label' => 'Unsatisfied', 'value' => 25, 'color' => '#ef4444'],
+    $this->repository->shouldReceive('countsBySatisfactionScore')->andReturn([
+        5 => 25,
+        4 => 25,
+        3 => 25,
+        2 => 25,
     ]);
-    $this->repository->shouldReceive('countByChannel')->andReturn([
-        ['label' => 'Email', 'value' => 40],
-    ]);
+    $this->repository->shouldReceive('countByChannel')->andReturn(['Email' => 40]);
     $this->repository->shouldReceive('dailyCounts')->with(14)->andReturn([
         ['date' => '2026-07-07', 'count' => 5],
     ]);
@@ -142,8 +127,8 @@ test('build uses repository aggregates without demo fallbacks', function () {
 
     $result = $this->service->build();
 
-    expect($result['departmentAverages'])->toBe([['label' => 'Support', 'value' => 4.5]]);
-    expect($result['channelData'])->toBe([['label' => 'Email', 'value' => 40]]);
+    expect($result['departmentAverages'][0])->toBe(['label' => 'Support', 'value' => 4.5]);
+    expect($result['channelData'][0])->toBe(['label' => 'Email', 'value' => 40]);
     expect($result['dailyActivity'])->toBe([['date' => '2026-07-07', 'count' => 5]]);
     expect($result['completionRate'])->toBe(50);
 });

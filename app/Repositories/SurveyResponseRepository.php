@@ -4,10 +4,9 @@ namespace App\Repositories;
 
 use App\DTO\ReportPeriodData;
 use App\DTO\SurveyResponseData;
-use App\Enums\Department;
-use App\Enums\SurveyChannel;
 use App\Models\SurveyResponse;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -97,91 +96,63 @@ class SurveyResponseRepository
     }
 
     /**
-     * @return array<int, array{label: string, value: float}>
+     * Average satisfaction score keyed by department value.
+     *
+     * @return array<string, float>
      */
     public function averageScoreByDepartment(): array
     {
-        $averages = SurveyResponse::query()
+        $averages = [];
+
+        SurveyResponse::query()
             ->select('department', DB::raw('avg(satisfaction_score) as avg_score'))
             ->groupBy('department')
             ->get()
-            ->mapWithKeys(function (SurveyResponse $row): array {
-                $department = $row->department;
-
-                return [
-                    $department instanceof Department ? $department->value : (string) $department => round((float) $row->getAttribute('avg_score'), 1),
-                ];
+            ->each(function (SurveyResponse $row) use (&$averages): void {
+                $averages[$row->department->value] = round((float) $row->getAttribute('avg_score'), 1);
             });
 
-        return collect(Department::cases())
-            ->map(fn (Department $department): array => [
-                'label' => $department->value,
-                'value' => $averages->get($department->value, 0.0),
-            ])
-            ->sortByDesc('value')
-            ->values()
-            ->all();
+        return $averages;
     }
 
     /**
-     * @return array<int, array{label: string, value: int}>
+     * Response total keyed by channel value.
+     *
+     * @return array<string, int>
      */
     public function countByChannel(): array
     {
-        $counts = SurveyResponse::query()
+        $counts = [];
+
+        SurveyResponse::query()
             ->select('channel', DB::raw('count(*) as total'))
             ->groupBy('channel')
             ->get()
-            ->mapWithKeys(function (SurveyResponse $row): array {
-                $channel = $row->channel;
-
-                return [
-                    $channel instanceof SurveyChannel ? $channel->value : (string) $channel => (int) $row->getAttribute('total'),
-                ];
+            ->each(function (SurveyResponse $row) use (&$counts): void {
+                $counts[$row->channel->value] = (int) $row->getAttribute('total');
             });
 
-        return collect(SurveyChannel::cases())
-            ->map(fn (SurveyChannel $channel): array => [
-                'label' => $channel->value,
-                'value' => $counts->get($channel->value, 0),
-            ])
-            ->sortByDesc('value')
-            ->values()
-            ->all();
+        return $counts;
     }
 
     /**
-     * @return array<int, array{label: string, value: int, color: string}>
+     * Response total keyed by raw satisfaction score (1-5).
+     *
+     * @return array<int, int>
      */
-    public function satisfactionSplit(): array
+    public function countsBySatisfactionScore(): array
     {
-        $buckets = [
-            'Very satisfied' => ['min' => 5, 'max' => 5, 'color' => '#2563eb'],
-            'Satisfied' => ['min' => 4, 'max' => 4, 'color' => '#14b8a6'],
-            'Neutral' => ['min' => 3, 'max' => 3, 'color' => '#f59e0b'],
-            'Unsatisfied' => ['min' => 1, 'max' => 2, 'color' => '#ef4444'],
-        ];
+        $counts = [];
 
-        $counts = SurveyResponse::query()
+        SurveyResponse::query()
             ->select('satisfaction_score', DB::raw('count(*) as total'))
             ->groupBy('satisfaction_score')
-            ->pluck('total', 'satisfaction_score')
-            ->map(fn ($total): int => (int) $total);
+            ->get()
+            ->each(function (SurveyResponse $row) use (&$counts): void {
+                $counts[(int) $row->satisfaction_score] = (int) $row->getAttribute('total');
+            });
 
-        return collect($buckets)
-            ->map(function (array $bucket, string $label) use ($counts): array {
-                $value = $counts
-                    ->filter(fn (int $total, int|string $score): bool => (int) $score >= $bucket['min'] && (int) $score <= $bucket['max'])
-                    ->sum();
-
-                return [
-                    'label' => $label,
-                    'value' => $value,
-                    'color' => $bucket['color'],
-                ];
-            })
-            ->values()
-            ->all();
+        return $counts;
     }
 
     /**
@@ -192,15 +163,12 @@ class SurveyResponseRepository
     public function monthlyCounts(int $months): array
     {
         $start = now()->startOfMonth()->subMonths($months - 1);
-        $monthExpression = $this->monthKeyExpression('created_at');
 
         $rows = SurveyResponse::query()
-            ->select(
-                DB::raw("{$monthExpression} as month_key"),
-                DB::raw('count(*) as total'),
-            )
+            ->selectRaw($this->monthKeySelectExpression())
+            ->selectRaw('count(*) as total')
             ->where('created_at', '>=', $start)
-            ->groupBy(DB::raw($monthExpression))
+            ->groupByRaw($this->monthKeyGroupExpression())
             ->pluck('total', 'month_key')
             ->map(fn ($total): int => (int) $total);
 
@@ -218,12 +186,11 @@ class SurveyResponseRepository
      */
     public function dailyCounts(int $days): array
     {
-        $dateExpression = $this->dateKeyExpression('created_at');
-
         $rows = SurveyResponse::query()
-            ->select(DB::raw("{$dateExpression} as date"), DB::raw('count(*) as count'))
+            ->selectRaw($this->dateKeySelectExpression())
+            ->selectRaw('count(*) as count')
             ->whereDate('created_at', '>=', now()->subDays($days - 1))
-            ->groupBy(DB::raw($dateExpression))
+            ->groupByRaw($this->dateKeyGroupExpression())
             ->pluck('count', 'date')
             ->map(fn ($count) => (int) $count);
 
@@ -236,26 +203,58 @@ class SurveyResponseRepository
             ->all();
     }
 
-    private function monthKeyExpression(string $column): string
+    /**
+     * @return literal-string
+     */
+    private function monthKeySelectExpression(): string
     {
         return match ($this->driver()) {
-            'mysql', 'mariadb' => "DATE_FORMAT({$column}, '%Y-%m')",
-            'pgsql' => "to_char({$column}, 'YYYY-MM')",
-            default => "strftime('%Y-%m', {$column})",
+            'mysql', 'mariadb' => "DATE_FORMAT(created_at, '%Y-%m') as month_key",
+            'pgsql' => "to_char(created_at, 'YYYY-MM') as month_key",
+            default => "strftime('%Y-%m', created_at) as month_key",
         };
     }
 
-    private function dateKeyExpression(string $column): string
+    /**
+     * @return literal-string
+     */
+    private function monthKeyGroupExpression(): string
     {
         return match ($this->driver()) {
-            'mysql', 'mariadb' => "DATE({$column})",
-            'pgsql' => "{$column}::date",
-            default => "date({$column})",
+            'mysql', 'mariadb' => "DATE_FORMAT(created_at, '%Y-%m')",
+            'pgsql' => "to_char(created_at, 'YYYY-MM')",
+            default => "strftime('%Y-%m', created_at)",
+        };
+    }
+
+    /**
+     * @return literal-string
+     */
+    private function dateKeySelectExpression(): string
+    {
+        return match ($this->driver()) {
+            'mysql', 'mariadb' => 'DATE(created_at) as date',
+            'pgsql' => 'created_at::date as date',
+            default => 'date(created_at) as date',
+        };
+    }
+
+    /**
+     * @return literal-string
+     */
+    private function dateKeyGroupExpression(): string
+    {
+        return match ($this->driver()) {
+            'mysql', 'mariadb' => 'DATE(created_at)',
+            'pgsql' => 'created_at::date',
+            default => 'date(created_at)',
         };
     }
 
     private function driver(): string
     {
-        return SurveyResponse::query()->getConnection()->getDriverName();
+        $connection = SurveyResponse::query()->getConnection();
+
+        return $connection instanceof Connection ? $connection->getDriverName() : '';
     }
 }

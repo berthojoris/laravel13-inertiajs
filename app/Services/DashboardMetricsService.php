@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\Department;
 use App\Enums\SurveyChannel;
 use App\Repositories\SurveyResponseRepository;
 use Carbon\CarbonInterface;
@@ -13,6 +14,18 @@ class DashboardMetricsService
     private const MONTHLY_PERIODS = 8;
 
     private const HEATMAP_DAYS = 14;
+
+    /**
+     * Presentation buckets for the satisfaction donut chart.
+     *
+     * @var array<string, array{min: int, max: int, color: string}>
+     */
+    private const SATISFACTION_BUCKETS = [
+        'Very satisfied' => ['min' => 5, 'max' => 5, 'color' => '#2563eb'],
+        'Satisfied' => ['min' => 4, 'max' => 4, 'color' => '#14b8a6'],
+        'Neutral' => ['min' => 3, 'max' => 3, 'color' => '#f59e0b'],
+        'Unsatisfied' => ['min' => 1, 'max' => 2, 'color' => '#ef4444'],
+    ];
 
     public function __construct(
         private readonly SurveyResponseRepository $repository,
@@ -31,7 +44,7 @@ class DashboardMetricsService
             ? (int) round(($withFeedback / $totalResponses) * 100)
             : 0;
 
-        $departmentScores = $this->repository->averageScoreByDepartment();
+        $departmentScores = $this->departmentScores();
 
         return [
             'metrics' => [
@@ -57,13 +70,70 @@ class DashboardMetricsService
                 ],
             ],
             'monthlyResponses' => $this->repository->monthlyCounts(self::MONTHLY_PERIODS),
-            'satisfactionSplit' => $this->repository->satisfactionSplit(),
-            'channelData' => $this->repository->countByChannel(),
+            'satisfactionSplit' => $this->satisfactionSplit(),
+            'channelData' => $this->channelData(),
             'departmentScores' => $departmentScores,
             'departmentAverages' => $departmentScores,
             'dailyActivity' => $this->repository->dailyCounts(self::HEATMAP_DAYS),
             'completionRate' => $completionRate,
         ];
+    }
+
+    /**
+     * @return array<int, array{label: string, value: int, color: string}>
+     */
+    private function satisfactionSplit(): array
+    {
+        $counts = $this->repository->countsBySatisfactionScore();
+        $split = [];
+
+        foreach (self::SATISFACTION_BUCKETS as $label => $bucket) {
+            $value = 0;
+
+            foreach ($counts as $score => $total) {
+                if ($score >= $bucket['min'] && $score <= $bucket['max']) {
+                    $value += $total;
+                }
+            }
+
+            $split[] = ['label' => $label, 'value' => $value, 'color' => $bucket['color']];
+        }
+
+        return $split;
+    }
+
+    /**
+     * @return array<int, array{label: string, value: int}>
+     */
+    private function channelData(): array
+    {
+        $counts = $this->repository->countByChannel();
+        $data = [];
+
+        foreach (SurveyChannel::cases() as $channel) {
+            $data[] = ['label' => $channel->value, 'value' => $counts[$channel->value] ?? 0];
+        }
+
+        usort($data, fn (array $first, array $second): int => $second['value'] <=> $first['value']);
+
+        return $data;
+    }
+
+    /**
+     * @return array<int, array{label: string, value: float}>
+     */
+    private function departmentScores(): array
+    {
+        $averages = $this->repository->averageScoreByDepartment();
+        $scores = [];
+
+        foreach (Department::cases() as $department) {
+            $scores[] = ['label' => $department->value, 'value' => $averages[$department->value] ?? 0.0];
+        }
+
+        usort($scores, fn (array $first, array $second): int => $second['value'] <=> $first['value']);
+
+        return $scores;
     }
 
     private function countTrendLabel(): string
