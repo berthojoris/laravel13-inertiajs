@@ -29,14 +29,20 @@ export default function ManagePasskeys(props: Props) {
     const passkeys = props.passkeys ?? [];
 
     const handleDelete = (id: number, onError: () => void) => {
-        router.delete(destroy.url(id), {
-            preserveScroll: true,
-            onError,
-        });
+        router
+            .optimistic((pageProps: { passkeys?: Passkey[] }) => ({
+                passkeys: (pageProps.passkeys ?? []).filter(
+                    (passkey) => passkey.id !== id,
+                ),
+            }))
+            .delete(destroy.url(id), {
+                preserveScroll: true,
+                onError,
+            });
     };
 
     const handleRegisterSuccess = () => {
-        router.reload();
+        router.reload({ only: ['passkeys'] });
     };
 
     if (!(props.canManagePasskeys ?? false)) {

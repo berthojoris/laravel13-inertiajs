@@ -1,8 +1,10 @@
 <?php
 
 use App\Enums\SurveyChannel;
+use App\Models\SurveyResponse;
 use App\Repositories\SurveyResponseRepository;
 use App\Services\DashboardMetricsService;
+use Illuminate\Database\Eloquent\Collection;
 
 beforeEach(function () {
     $this->repository = Mockery::mock(SurveyResponseRepository::class);
@@ -117,4 +119,31 @@ test('analytics uses repository aggregates', function () {
     expect($result['channelData'][0])->toBe(['label' => 'Website', 'value' => 120]);
     expect($result['dailyActivity'])->toBe([['date' => '2026-07-07', 'count' => 5]]);
     expect($result['monthlyResponses'])->toBe([1, 2, 3, 4, 5, 6, 7, 8]);
+});
+
+test('recentResponses maps latest repository models through resource', function () {
+    $model = new SurveyResponse([
+        'respondent_name' => 'Ayu Lestari',
+        'email' => 'ayu@example.com',
+        'department' => 'Product',
+        'satisfaction_score' => 5,
+        'channel' => 'Website',
+        'feedback' => 'Sangat membantu',
+        'is_archived' => false,
+    ]);
+    $model->id = 42;
+    $model->created_at = now();
+
+    $this->repository
+        ->shouldReceive('latestResponses')
+        ->once()
+        ->with(5)
+        ->andReturn(new Collection([$model]));
+
+    $result = $this->service->recentResponses();
+
+    expect($result)->toHaveCount(1)
+        ->and($result[0]['id'])->toBe(42)
+        ->and($result[0]['respondent_name'])->toBe('Ayu Lestari')
+        ->and($result[0]['department'])->toBe('Product');
 });

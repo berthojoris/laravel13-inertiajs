@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Enums\Department;
 use App\Enums\SurveyChannel;
+use App\Http\Resources\SurveyResponseResource;
+use App\Models\SurveyResponse;
 use App\Repositories\SurveyResponseRepository;
 use Carbon\CarbonInterface;
 
@@ -14,6 +16,8 @@ class DashboardMetricsService
     private const MONTHLY_PERIODS = 8;
 
     private const HEATMAP_DAYS = 14;
+
+    private const RECENT_RESPONSES_LIMIT = 5;
 
     /**
      * Presentation buckets for the satisfaction donut chart.
@@ -90,6 +94,18 @@ class DashboardMetricsService
             'departmentAverages' => $departmentScores,
             'dailyActivity' => $this->repository->dailyCounts(self::HEATMAP_DAYS),
         ];
+    }
+
+    /**
+     * Recent responses loaded on demand via WhenVisible below the fold.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function recentResponses(int $limit = self::RECENT_RESPONSES_LIMIT): array
+    {
+        return $this->repository->latestResponses($limit)
+            ->map(fn (SurveyResponse $response): array => (new SurveyResponseResource($response))->resolve())
+            ->all();
     }
 
     /**

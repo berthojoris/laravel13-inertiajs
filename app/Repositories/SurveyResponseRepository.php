@@ -58,6 +58,17 @@ class SurveyResponseRepository
             ->get();
     }
 
+    /**
+     * @return Collection<int, SurveyResponse>
+     */
+    public function latestResponses(int $limit = 5): Collection
+    {
+        return SurveyResponse::query()
+            ->latest()
+            ->limit($limit)
+            ->get();
+    }
+
     public function count(): int
     {
         return SurveyResponse::query()->count();

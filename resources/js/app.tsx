@@ -31,7 +31,14 @@ createInertiaApp({
             </TooltipProvider>
         );
     },
+    defaults: {
+        prefetch: {
+            cacheFor: '30s',
+            hoverDelay: 75,
+        },
+    },
     progress: {
+        delay: 250,
         color: '#4B5563',
     },
 });

@@ -7,7 +7,7 @@ import {
     Info,
     ShieldCheck,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -68,7 +68,7 @@ export default function Report() {
     const today = toDateInputValue(new Date());
     const [startDate, setStartDate] = useState(today);
     const [endDate, setEndDate] = useState(today);
-    const [isExporting, setIsExporting] = useState(false);
+    const [isExporting, startExportTransition] = useTransition();
 
     const isDateRangeValid = startDate <= endDate;
     const selectedDays = isDateRangeValid
@@ -81,14 +81,12 @@ export default function Report() {
         query: { start_date: startDate, end_date: endDate },
     });
 
-    async function handleExport() {
+    function handleExport() {
         if (!isDateRangeValid || isExporting) {
             return;
         }
 
-        setIsExporting(true);
-
-        try {
+        startExportTransition(async () => {
             const response = await fetch(exportUrl, {
                 headers: {
                     Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -109,9 +107,7 @@ export default function Report() {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-        } finally {
-            setIsExporting(false);
-        }
+        });
     }
 
     return (

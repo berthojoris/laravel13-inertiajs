@@ -27,9 +27,18 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                 isActive={active}
                                 tooltip={{ children: item.title }}
                             >
-                                <Link href={item.href} prefetch>
+                                <Link
+                                    href={item.href}
+                                    prefetch
+                                    cacheFor={['10s', '30s']}
+                                    cacheTags={[
+                                        'dashboard',
+                                        'surveys',
+                                        'survey-extra',
+                                    ]}
+                                >
                                     {active && (
-                                        <Check className="size-3.5 shrink-0 text-emerald-500 dark:text-emerald-400 stroke-[2.5]" />
+                                        <Check className="size-3.5 shrink-0 stroke-[2.5] text-emerald-500 dark:text-emerald-400" />
                                     )}
                                     {item.icon && <item.icon />}
                                     <span>{item.title}</span>

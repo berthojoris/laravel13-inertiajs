@@ -4,6 +4,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 
 type Props = {
     onSuccess: () => void;
@@ -96,7 +97,12 @@ export default function PasskeyRegistration({ onSuccess }: Props) {
             {error && <InputError message={error} />}
 
             <div className="flex gap-2">
-                <Button type="submit" disabled={isLoading || !name.trim()}>
+                <Button
+                    type="submit"
+                    disabled={isLoading || !name.trim()}
+                    aria-busy={isLoading}
+                >
+                    {isLoading && <Spinner />}
                     {isLoading ? 'Registering...' : 'Register passkey'}
                 </Button>
                 <Button type="button" variant="ghost" onClick={handleCancel}>

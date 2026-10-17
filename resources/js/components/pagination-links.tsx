@@ -92,6 +92,7 @@ export function PaginationLinks({ links }: { links: PaginationLink[] }) {
                         {link.url ? (
                             <Link
                                 href={link.url}
+                                prefetch
                                 preserveScroll
                                 dangerouslySetInnerHTML={{
                                     __html: link.label,

@@ -1,6 +1,12 @@
 import { Head, router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import {
+    useDeferredValue,
+    useEffect,
+    useRef,
+    useState,
+    useTransition,
+} from 'react';
 import { PaginationLinks } from '@/components/pagination-links';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -11,6 +17,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import { index } from '@/routes/survey-extra-results';
 import type { Paginated, SurveyExtraResponse } from '@/types';
 
@@ -43,14 +50,23 @@ export default function SurveyExtraResults({
     filters: { search: string };
 }) {
     const [search, setSearch] = useState(filters.search ?? '');
+    const deferredSearch = useDeferredValue(search);
+    const [isSearching, startSearchTransition] = useTransition();
     const isInitialRender = useRef(true);
 
     function runSearch(value: string) {
-        router.get(
-            index.url(),
-            { search: value },
-            { preserveState: true, preserveScroll: true, replace: true },
-        );
+        startSearchTransition(() => {
+            router.get(
+                index.url(),
+                { search: value },
+                {
+                    only: ['responses', 'filters'],
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
+        });
     }
 
     useEffect(() => {
@@ -60,10 +76,10 @@ export default function SurveyExtraResults({
             return;
         }
 
-        const timeout = setTimeout(() => runSearch(search), 3000);
+        const timeout = setTimeout(() => runSearch(deferredSearch), 3000);
 
         return () => clearTimeout(timeout);
-    }, [search]);
+    }, [deferredSearch]);
 
     return (
         <>
@@ -87,8 +103,12 @@ export default function SurveyExtraResults({
                                     setSearch(event.target.value)
                                 }
                                 placeholder="Cari nama atau email user"
-                                className="pl-9"
+                                className="pr-9 pl-9"
+                                aria-busy={isSearching}
                             />
+                            {isSearching && (
+                                <Spinner className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                            )}
                         </div>
                     </CardHeader>
                     <CardContent>

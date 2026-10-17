@@ -1,9 +1,10 @@
-import { Deferred, Head, usePoll } from '@inertiajs/react';
+import { Deferred, Head, Link, usePoll, WhenVisible } from '@inertiajs/react';
 import {
     Activity,
     ArrowUpRight,
     BarChart3,
     CalendarDays,
+    Clock,
     Download,
     ListChecks,
     PieChart as PieChartIcon,
@@ -19,6 +20,7 @@ import {
     ScoreRadar,
 } from '@/components/analytics-chart';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -28,7 +30,8 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { dashboard } from '@/routes';
-import type { DashboardAnalytics, Metric } from '@/types';
+import { index as surveyResults } from '@/routes/survey-results';
+import type { DashboardAnalytics, Metric, SurveyResponse } from '@/types';
 
 const metricIcons = [Activity, PieChartIcon, BarChart3, Download];
 const metricAccents = [
@@ -61,10 +64,12 @@ export default function Dashboard({
     metrics,
     completionRate,
     analytics,
+    recentResponses = [],
 }: {
     metrics: Metric[];
     completionRate: number;
     analytics: DashboardAnalytics;
+    recentResponses?: SurveyResponse[];
 }) {
     usePoll(15000, { only: ['metrics', 'completionRate'] });
 
@@ -176,8 +181,84 @@ export default function Dashboard({
                 <Deferred data="analytics" fallback={<AnalyticsSkeleton />}>
                     <Analytics analytics={analytics} />
                 </Deferred>
+
+                <WhenVisible
+                    data="recentResponses"
+                    buffer={120}
+                    fallback={<Skeleton className="h-56 rounded-3xl" />}
+                >
+                    <RecentResponses responses={recentResponses} />
+                </WhenVisible>
             </div>
         </>
+    );
+}
+
+function RecentResponses({ responses }: { responses: SurveyResponse[] }) {
+    return (
+        <Card className="border-muted/80 shadow-sm">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <CardTitle className="flex items-center gap-2">
+                        <Clock className="size-4 text-muted-foreground" />
+                        Recent survey responses
+                    </CardTitle>
+                    <CardDescription>
+                        Dimuat secara on-demand saat bagian ini terlihat di
+                        layar (WhenVisible).
+                    </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" asChild>
+                    <Link
+                        href={surveyResults()}
+                        prefetch
+                        cacheTags={['surveys']}
+                    >
+                        Lihat semua
+                    </Link>
+                </Button>
+            </CardHeader>
+            <CardContent>
+                {responses.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                        Belum ada respons survey terbaru.
+                    </p>
+                ) : (
+                    <div className="divide-y rounded-xl border">
+                        {responses.map((response) => (
+                            <div
+                                key={response.id}
+                                className="flex flex-col gap-2 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                            >
+                                <div>
+                                    <div className="flex items-center gap-2 font-medium">
+                                        <span>{response.respondent_name}</span>
+                                        <Badge variant="secondary">
+                                            {response.department}
+                                        </Badge>
+                                        <Badge variant="outline">
+                                            {response.channel}
+                                        </Badge>
+                                    </div>
+                                    <p className="mt-0.5 text-xs text-muted-foreground">
+                                        {response.feedback ??
+                                            'Tanpa komentar tambahan'}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs text-muted-foreground">
+                                        {response.created_at}
+                                    </span>
+                                    <span className="inline-flex size-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                                        {response.satisfaction_score}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
     );
 }
 

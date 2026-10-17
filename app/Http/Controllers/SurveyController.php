@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Actions\Survey\StoreSurveyResponseAction;
 use App\DTO\SurveyResponseData;
+use App\Enums\Department;
+use App\Enums\SurveyChannel;
 use App\Http\Requests\StoreSurveyResponseRequest;
 use App\Models\SurveyResponse;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +18,20 @@ class SurveyController extends Controller
     {
         $this->authorize('create', SurveyResponse::class);
 
-        return Inertia::render('survey');
+        return Inertia::render('survey', [
+            'departments' => Inertia::once(
+                static fn (): array => array_map(
+                    static fn (Department $department): string => $department->value,
+                    Department::cases(),
+                ),
+            ),
+            'channels' => Inertia::once(
+                static fn (): array => array_map(
+                    static fn (SurveyChannel $channel): string => $channel->value,
+                    SurveyChannel::cases(),
+                ),
+            ),
+        ]);
     }
 
     public function store(StoreSurveyResponseRequest $request, StoreSurveyResponseAction $action): RedirectResponse

@@ -10,6 +10,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { Spinner } from '@/components/ui/spinner';
 import type { Passkey } from '@/types/auth';
 
 type Props = {
@@ -82,7 +83,9 @@ export default function PasskeyItem({ passkey, onDelete }: Props) {
                             variant="destructive"
                             onClick={handleDelete}
                             disabled={isDeleting}
+                            aria-busy={isDeleting}
                         >
+                            {isDeleting && <Spinner />}
                             {isDeleting ? 'Removing...' : 'Remove passkey'}
                         </Button>
                     </DialogFooter>

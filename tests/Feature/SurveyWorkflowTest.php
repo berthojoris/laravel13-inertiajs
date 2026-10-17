@@ -14,7 +14,11 @@ test('authenticated user can render survey pages', function () {
     $this->actingAs($user)
         ->get(route('survey.create'))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->component('survey'));
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('survey')
+            ->has('departments', 5)
+            ->has('channels', 4)
+        );
 
     $this->actingAs($user)
         ->get(route('survey-extra.create'))

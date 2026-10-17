@@ -20,6 +20,7 @@ class DashboardController extends Controller
         return Inertia::render('dashboard', [
             ...$this->metrics->headline(),
             'analytics' => Inertia::defer(fn (): array => $this->metrics->analytics()),
+            'recentResponses' => Inertia::optional(fn (): array => $this->metrics->recentResponses()),
         ]);
     }
 }

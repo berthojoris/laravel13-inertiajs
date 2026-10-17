@@ -1,5 +1,5 @@
 import type { FormComponentRef } from '@inertiajs/core';
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, useRemember } from '@inertiajs/react';
 import {
     ArrowLeft,
     ArrowRight,
@@ -7,7 +7,7 @@ import {
     ClipboardCheck,
     Send,
 } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useId, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -310,6 +310,9 @@ function QuestionField({
     checkedValues?: string[];
     onCheckedChange?: (value: string, checked: boolean) => void;
 }) {
+    const fieldId = useId();
+    const errorId = `${fieldId}-error`;
+
     if (question.type === 'text') {
         return (
             <div className="grid gap-2">
@@ -319,8 +322,9 @@ function QuestionField({
                     name={question.name}
                     placeholder={question.placeholder}
                     aria-invalid={!!error}
+                    aria-describedby={error ? errorId : undefined}
                 />
-                <InputError message={error} />
+                <InputError id={errorId} message={error} />
             </div>
         );
     }
@@ -330,7 +334,11 @@ function QuestionField({
             <div className="grid gap-2">
                 <Label>{question.label}</Label>
                 <Select name={question.name}>
-                    <SelectTrigger className="w-full" aria-invalid={!!error}>
+                    <SelectTrigger
+                        className="w-full"
+                        aria-invalid={!!error}
+                        aria-describedby={error ? errorId : undefined}
+                    >
                         <SelectValue placeholder={question.placeholder} />
                     </SelectTrigger>
                     <SelectContent>
@@ -341,14 +349,17 @@ function QuestionField({
                         ))}
                     </SelectContent>
                 </Select>
-                <InputError message={error} />
+                <InputError id={errorId} message={error} />
             </div>
         );
     }
 
     if (question.type === 'checkbox') {
         return (
-            <fieldset className="grid gap-3">
+            <fieldset
+                className="grid gap-3"
+                aria-describedby={error ? errorId : undefined}
+            >
                 <legend className="text-sm font-medium">
                     {question.label}
                 </legend>
@@ -386,13 +397,16 @@ function QuestionField({
                         );
                     })}
                 </div>
-                <InputError message={error} />
+                <InputError id={errorId} message={error} />
             </fieldset>
         );
     }
 
     return (
-        <fieldset className="grid gap-3">
+        <fieldset
+            className="grid gap-3"
+            aria-describedby={error ? errorId : undefined}
+        >
             <legend className="text-sm font-medium">{question.label}</legend>
             <div className="grid gap-2 sm:grid-cols-2">
                 {question.options.map((option) => (
@@ -414,7 +428,7 @@ function QuestionField({
                     </label>
                 ))}
             </div>
-            <InputError message={error} />
+            <InputError id={errorId} message={error} />
         </fieldset>
     );
 }
@@ -426,11 +440,17 @@ const checkboxQuestionNames = steps
 
 export default function SurveyExtra() {
     const formRef = useRef<FormComponentRef<SurveyExtraFormValues>>(null);
-    const [currentStep, setCurrentStep] = useState(0);
+    const [currentStep, setCurrentStep] = useRemember(
+        0,
+        'SurveyExtra:currentStep',
+    );
     const [clientErrors, setClientErrors] = useState<SurveyExtraFormErrors>({});
-    const [checkboxState, setCheckboxState] = useState<
+    const [checkboxState, setCheckboxState] = useRemember<
         Record<string, string[]>
-    >(Object.fromEntries(checkboxQuestionNames.map((name) => [name, []])));
+    >(
+        Object.fromEntries(checkboxQuestionNames.map((name) => [name, []])),
+        'SurveyExtra:checkboxState',
+    );
     const activeStep = steps[currentStep];
     const isFirstStep = currentStep === 0;
     const isLastStep = currentStep === steps.length - 1;
@@ -453,7 +473,7 @@ export default function SurveyExtra() {
                 };
             });
         },
-        [],
+        [setCheckboxState],
     );
 
     function getMergedData(): SurveyExtraFormValues {
@@ -576,6 +596,7 @@ export default function SurveyExtra() {
                             {...store.form()}
                             ref={formRef}
                             resetOnSuccess
+                            invalidateCacheTags={['survey-extra']}
                             className="grid gap-6"
                             onSuccess={() => {
                                 setCurrentStep(0);

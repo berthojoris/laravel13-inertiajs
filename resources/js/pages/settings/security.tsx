@@ -10,6 +10,7 @@ import ManageTwoFactor from '@/components/manage-two-factor';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { edit } from '@/routes/security';
 
 type Props = {
@@ -113,9 +114,11 @@ export default function Security(props: Props) {
                             <div className="flex items-center gap-4">
                                 <Button
                                     disabled={processing}
+                                    aria-busy={processing}
                                     data-test="update-password-button"
                                 >
-                                    Save
+                                    {processing && <Spinner />}
+                                    {processing ? 'Saving...' : 'Save'}
                                 </Button>
                             </div>
                         </>

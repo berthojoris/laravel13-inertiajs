@@ -48,7 +48,13 @@ const captureSteps = [
     'Skor dan feedback',
 ];
 
-export default function Survey() {
+export default function Survey({
+    departments = DEPARTMENTS,
+    channels = CHANNELS,
+}: {
+    departments?: readonly string[];
+    channels?: readonly string[];
+}) {
     const formRef = useRef<FormComponentRef<SurveyFormValues>>(null);
 
     return (
@@ -135,6 +141,7 @@ export default function Survey() {
                                 ref={formRef}
                                 noValidate
                                 resetOnSuccess
+                                invalidateCacheTags={['surveys', 'dashboard']}
                                 className="grid gap-5"
                                 onBefore={() => {
                                     const data =
@@ -275,7 +282,7 @@ export default function Survey() {
                                                         <SelectValue placeholder="Pilih departemen" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {DEPARTMENTS.map(
+                                                        {departments.map(
                                                             (department) => (
                                                                 <SelectItem
                                                                     key={
@@ -317,7 +324,7 @@ export default function Survey() {
                                                         <SelectValue placeholder="Pilih channel" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {CHANNELS.map(
+                                                        {channels.map(
                                                             (channel) => (
                                                                 <SelectItem
                                                                     key={
