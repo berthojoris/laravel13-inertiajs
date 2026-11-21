@@ -16,7 +16,8 @@
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
-        "maatwebsite/excel": "^3.1"
+        "maatwebsite/excel": "^3.1",
+        "nforst/fagus": "^1.1.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",
@@ -112,7 +113,8 @@
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
-            "php-http/discovery": true
+            "php-http/discovery": true,
+            "nforst/fagus": true
         }
     },
     "minimum-stability": "stable",

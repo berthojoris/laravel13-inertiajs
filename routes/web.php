@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PdfDemoController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\SurveyExtraController;
@@ -21,6 +22,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('survey-extra-results', SurveyExtraResultController::class)->name('survey-extra-results.index');
     Route::get('report', [ReportController::class, 'index'])->name('report.index');
     Route::get('report/export', [ReportController::class, 'export'])->name('report.export');
+    Route::get('pdf/demo', PdfDemoController::class)->name('pdf.demo');
 });
 
 require __DIR__.'/settings.php';
